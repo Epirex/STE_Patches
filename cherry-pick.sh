@@ -66,6 +66,11 @@ then
     
   if [ "$REPO_BRANCH" = "cm-11.0" ]
   then
+    echo -e $CL_BLU"Cherrypicking for android_external_chromium_org - Video streaming fix"$CL_RST
+    cd external/chromium_org/android_webview/lib/main
+    git fetch https://github.com/Epirex/android_external_chromium_org
+    git cherry-pick d50a349b18426be06608191ad3ab9b9d17e2c0a5
+    cd ../../../../..
     echo -e $CL_BLU"Cherrypicking for android_art - ART fix"$CL_RST
     cd art
     git fetch https://github.com/cernekee/android_art monitor-stack-v1
