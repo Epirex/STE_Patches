@@ -80,8 +80,6 @@ then
     cd frameworks/av
     git fetch https://github.com/TeamCanjica/android_frameworks_av cm-11.0
     git cherry-pick 87618c1ea54009c2e5e5dfb60060f9cc2e9bcc52
-    echo -e $CL_BLU"Cherrypicking for android_frameworks_av - STE-OMX: fix getSupportedProfileLevel"$CL_RST
-    git cherry-pick cfcb60d66b01783c274dc625bf32a44899d1e603
     echo -e $CL_BLU"Cherrypicking for android_frameworks_av - STE-OMX: video streaming fix"$CL_RST
     git cherry-pick 3dba426da410fadcd757eaa131166e534afbd1a9
     cd ..
