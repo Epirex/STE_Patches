@@ -1,50 +1,6 @@
 #!/usr/bin/env bash
 
-if [ "$REPO_BRANCH" = "cm-10.1" ]
-then
-  echo -e $CL_BLU"Cherrypicking Oliver patches - android_frameworks_av"$CL_RST
-  cd frameworks/av
-  git fetch http://review.cyanogenmod.org/CyanogenMod/android_frameworks_av refs/changes/21/46421/3
-  git cherry-pick FETCH_HEAD
-  cd ../..
-  echo -e $CL_BLU"Cherrypicking Oliver patches - android_system_core"$CL_RST
-  cd system/core
-  git fetch http://review.cyanogenmod.org/CyanogenMod/android_system_core refs/changes/32/45032/3
-  git cherry-pick FETCH_HEAD
-  cd ../..
-fi
-
-if [ "$REPO_BRANCH" = "cm-10.2" ] || [ "$REPO_BRANCH" = "omni-4.3" ]
-then
-
-  if [ "$REPO_BRANCH" = "cm-10.2" ]
-  then
-    echo -e $CL_BLU"Cherrypicking Oliver patches - android_frameworks_av"$CL_RST
-    cd frameworks/av
-    git fetch http://review.cyanogenmod.org/CyanogenMod/android_frameworks_av refs/changes/32/52032/3
-    git cherry-pick FETCH_HEAD
-    cd ..
-    echo -e $CL_BLU"Cherrypicking Oliver patches - android_frameworks_native"$CL_RST
-    cd native
-    git fetch http://review.cyanogenmod.org/CyanogenMod/android_frameworks_native refs/changes/33/52033/5
-    git cherry-pick FETCH_HEAD
-    cd ../..
-    echo -e $CL_BLU"Cherrypicking low in-call volume fix"$CL_RST
-    cd packages/apps/Phone
-    git fetch https://github.com/TeamCanjica/android_packages_apps_Phone cm-10.2
-    git cherry-pick 28f255779152310dfcf4bb232112017ea631e668
-    cd ../../..
-  else
-    echo -e $CL_BLU"Cherrypicking multiwindow - android_frameworks_base"$CL_RST
-    cd frameworks/base
-    git fetch https://gerrit.omnirom.org/android_frameworks_base refs/changes/53/53/19
-    git cherry-pick FETCH_HEAD
-    cd ../..
-  fi
-
-fi
- 
-if [ "$REPO_BRANCH" = "cm-11.0" ] || [ "$REPO_BRANCH" = "omni-4.4" ]
+if [ "$REPO_BRANCH" = "cm-11.0" ]
 then
   echo -e $CL_BLU"Cherrypicking for android_system_core - Reboot/shutdown fix"$CL_RST
   cd system/core
@@ -98,7 +54,7 @@ then
     git fetch https://github.com/TeamCanjica/android_packages_services_Telephony cm-11.0
     git cherry-pick fdf281fdabe5e7517eb96f2faf159bbcc74ae4a6
     cd ../../..
-      if [ "$DEVICE" = "janice" ] || [ "$DEVICE" = "janicep" ]
+      if [ "$DEVICE" = "janice" ]
       then
         echo -e $CL_BLU"Cherrypicking default RGB Colors fix"$CL_RST
         cd packages/apps/Settings
@@ -106,38 +62,4 @@ then
         git cherry-pick 76ce30bca51cb4392d7fb4df97ea8eed27f03c2d
         cd ../../..
       fi
-  elif [ "$REPO_BRANCH" = "omni-4.4" ]
-  then
-    echo -e $CL_BLU"Cherrypicking ART fix"$CL_RST
-    cd art
-    git fetch https://github.com/TeamCanjica/omni_art android-4.4
-    git cherry-pick cd5ff6efb38f85d0adb0706073a80e52e0c34311
-    cd ..
-    echo -e $CL_BLU"Cherrypicking OMX Patch - android_frameworks_av"$CL_RST
-    cd frameworks/av
-    git fetch https://github.com/TeamCanjica/omni_frameworks_av android-4.4
-    git cherry-pick 0faae0d8184dfe241bea9511a934b63a754a1aed
-    cd ..
-    echo -e $CL_BLU"Cherrypicking OMX Patch - android_frameworks_native"$CL_RST
-    cd native
-    git fetch https://github.com/TeamCanjica/omni_frameworks_native android-4.4
-    git cherry-pick 06c07d23cb515a2709464541899c36bee8cb033a
-    cd ..
-    echo -e $CL_BLU"Cherrypicking RIL build error fix"$CL_RST
-    cd opt/telephony
-    git fetch https://github.com/TeamCanjica/omni_frameworks_opt_telephony android-4.4
-    git cherry-pick 776a1fab6285d2a4b09bd110f29853eb1b6b286e
-    cd ../../..
-    echo -e $CL_BLU"Cherrypicking vold patch to allow switching storages"$CL_RST
-    cd system/vold
-    git fetch http://github.com/TeamCanjica/omni_system_vold android-4.4
-    git cherry-pick 602501d7f73e26e2ae8d6712ca293a133ae9cd62
-    cd ../..
-    echo -e $CL_BLU"Cherrypicking vibrator fix"$CL_RST
-    cd hardware/libhardware_legacy
-    git fetch https://github.com/TeamCanjica/omni_hardware_libhardware_legacy android-4.4
-    git cherry-pick 2e71ea08a201040727f1e82768e9e50e1cf44fe9
-    cd ../..
-  fi
-
 fi
