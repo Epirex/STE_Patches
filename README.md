@@ -1,36 +1,21 @@
-BuildBot
-========
+STE_Patches
+===============
 
----------------------------------------------------------------
-First starting on Jenkins
 
-Execute shell :
+--------------------------------------------------------------
 
-      git clone https://github.com/TeamCanjica/BuildBot.git
+How to add these patches in my repo? you need add this in local_manifest.xml
+
+      <project path="patches" name="Epirex/STE_Patches" revision="cm-11.0" remote="github" />
+
+--------------------------------------------------------------
+
+To apply patches:
+
+      REPO_BRANCH="cm-11.0" DEVICE="janice" patches/cherry-pick.sh
       
 --------------------------------------------------------------
 
-Execute shell:
+NOTE: after repo sync, need apply patches again
 
-      export DH_USER=****
-      export DH_PASSWORD=****
-      
-      $WORKSPACE/BuildBot/job.sh
-      
---------------------------------------------------------------
-Parameters:
-
-      Choice - DEVICE
-      Choice - REPO_BRANCH
-      Bool   - CLEAN
-      Bool   - DBG
-      Bool   - UPLOAD*
-      Bool   - PUBLIC*
-      Bool   - UL_ONLY*
-      Bool   - SYNC*
-      Bool   - KERNEL_ONLY*
-      Text   - DESC *
-      Text   - PACKAGE_NAME*
-
-*If not selected, default values are used
 --------------------------------------------------------------
