@@ -54,7 +54,7 @@ then
     git fetch https://github.com/TeamCanjica/android_packages_services_Telephony cm-11.0
     git cherry-pick fdf281fdabe5e7517eb96f2faf159bbcc74ae4a6
     cd ../../..
-      if [ "$DEVICE" = "janice" ]
+      elif [ "$DEVICE" = "janice" ]
       then
         echo -e $CL_BLU"Cherrypicking default RGB Colors fix"$CL_RST
         cd packages/apps/Settings
