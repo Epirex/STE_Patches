@@ -36,6 +36,8 @@ then
     cd frameworks/av
     git fetch https://github.com/EpirexDevProjects/android_frameworks_av cm-11.0
     git cherry-pick e725c9d3b2b321d879f5f2cb6f16c2c95adb8c8b
+    echo -e $CL_BLU"Cherrypicking for android_frameworks_av - STE-OMX: fix getSupportedProfileLevel"$CL_RST
+    git cherry-pick cd7cfee33fe7863f4d793ad2677bd95225c53267
     echo -e $CL_BLU"Cherrypicking for android_frameworks_av - STE-OMX: video streaming fix"$CL_RST
     git cherry-pick ddbdd58dcb5a0227e009bf15b5e61180c7408e0b
     cd ..
