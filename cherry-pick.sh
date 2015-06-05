@@ -6,5 +6,6 @@ then
   cd build
   git fetch https://github.com/EpirexDevProjects/android_build cm-12.1
   git cherry-pick ac76f901df73bc21fa106199e6f2fdf7b435b481
+  git cherry-pick 013498bbfcaaa694fe82742d9fe6650bd66491a6
   cd ..
 fi
