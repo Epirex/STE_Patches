@@ -5,8 +5,8 @@ then
   echo -e $CL_BLU"Cherrypicking android_build"$CL_RST
   cd build
   git fetch https://github.com/EpirexDevProjects/android_build cm-12.1
-  git cherry-pick 653803acda79dc9eb52def64f51a0f95ec18ce1e
-  git cherry-pick 9ff0ee9a95657cc915a6e69a328b37cb99ca9d5a
+  git cherry-pick a22f17677852770220ef9fc74d0fb148a5beaf92
+  git cherry-pick 53037e3b014ac4e2638cd76c47d061e9d622cfaa
   cd ..
 fi
 
