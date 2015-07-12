@@ -15,7 +15,8 @@ then
   echo -e $CL_BLU"Cherrypicking android_frameworks_av"$CL_RST
   cd frameworks/av
   git fetch https://github.com/EpirexDevProjects/android_frameworks_av cm-12.1
-  git cherry-pick 3f5e41de9e8a9f11640380ac3e32a1897dbccfc1
+  git cherry-pick a938746abdaa7905f12f90dcf7e2d8e5cdf2d507
+  git cherry-pick af601ff31b3df2fea69793259bc3faa140c2d7dd
   cd ../..
 fi
 
