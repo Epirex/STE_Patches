@@ -19,6 +19,11 @@ then
   git fetch http://review.cyanogenmod.org/CyanogenMod/android_frameworks_native refs/changes/11/59311/1
   git cherry-pick FETCH_HEAD
   cd ../..
+  echo -e $CL_BLU"Cherrypicking for android_build - Use GCC 4.8"$CL_RST		
+  cd build		
+  git fetch https://github.com/EpirexDevProjects/android_build cm-11.0		
+  git cherry-pick 32b52016895e36944950e33e9d48b0d814c0296b
+  cd ..
     
   if [ "$REPO_BRANCH" = "cm-11.0" ]
   then
