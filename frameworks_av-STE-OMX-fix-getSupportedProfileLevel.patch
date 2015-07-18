@@ -1,0 +1,70 @@
+From 128279fd3cf4e15aa4f77c124ae4fceda46f4f4a Mon Sep 17 00:00:00 2001
+From: Robert Rozic <r.rozic97@gmail.com>
+Date: Fri, 3 Oct 2014 14:15:36 +0200
+Subject: [PATCH] STE-OMX: fix getSupportedProfileLevel
+
+Author: @Meticulus
+
+-See notes in code.
+
+-Error Message:
+
+E/VFM ( 1683): ! getSupportedProfileLevel RETURN_XXX_IF_WRONG,
+condition=(index<mNbProfileLevelSupported),
+error=-2147479538(0x8000100e)(OMX_ErrorNo
+E/VFM ( 1683): ! getParameter RETURN_OMX_ERROR_IF_ERROR,
+condition=pParam->getIndexParamVideoProfileLevelQuerySupported(pt),
+error=-2147479538(0x800
+E/h264dec ( 1683): ! getParameter RETURN_OMX_ERROR_IF_ERROR,
+condition=VFM_Component::getParameter(nParamIndex, pt),
+error=-2147479538(0x8000100e)(_
+E/ENSWrapper( 1683): return OMX_ErrorNoMore - GetParameter
+OMX.ST.VFM.H264Dec h=0x4001bbb8
+E/VFM ( 1683): ! getSupportedVideoSettings RETURN_XXX_IF_WRONG,
+condition=(index<mNbVideoSettingsSupported[nPortIndex]),
+error=-2147479538(0x8000100
+E/VFM ( 1683): ! getParameter RETURN_OMX_ERROR_IF_ERROR,
+condition=pParam->getIndexParamVideoPortFormat(pt),
+error=-2147479538(0x8000100e)(_error) /
+E/h264dec ( 1683): ! getParameter RETURN_OMX_ERROR_IF_ERROR,
+condition=VFM_Component::getParameter(nParamIndex, pt),
+error=-2147479538(0x8000100e)(_
+E/ENSWrapper( 1683): return OMX_ErrorNoMore - GetParameter
+OMX.ST.VFM.H264Dec h=0x4001bbb8
+---
+ media/libstagefright/OMXClient.cpp       |   21 +
+ media/libstagefright/include/OMX_Index.h |  265 ++++++++
+ media/libstagefright/include/OMX_Video.h | 1078 ++++++++++++++++++++++++++++++
+ 3 files changed, 1364 insertions(+)
+ create mode 100644 media/libstagefright/include/OMX_Index.h
+ create mode 100644 media/libstagefright/include/OMX_Video.h
+
+diff --git a/media/libstagefright/OMXClient.cpp b/media/libstagefright/OMXClient.cpp
+index fb87de0..99acd3c 100644
+--- a/media/libstagefright/OMXClient.cpp
++++ b/media/libstagefright/OMXClient.cpp
+@@ -241,6 +246,22 @@ status_t MuxOMX::sendCommand(
+ status_t MuxOMX::getParameter(
+         node_id node, OMX_INDEXTYPE index,
+         void *params, size_t size) {
++#ifdef STE_HARDWARE
++	/* Meticulus:
++	 * If we call into our STE omx blobs with an unsupported profile index
++	 * The blob freaks out and dies causing errors later. If we stop the call
++	 * and just return an error here, VFM doesn't freak out and the caller
++	 * can try a working profile. i.e. YouTube v5.10.1.5 (9/19/2014) and up.
++	 */
++	if(index == OMX_IndexParamVideoProfileLevelQuerySupported){
++		OMX_VIDEO_PARAM_PROFILELEVELTYPE *pt = (OMX_VIDEO_PARAM_PROFILELEVELTYPE *)params;
++		ALOGI("Meticulus: eProfile=%lu eLevel=%lu nProfileIndex=%lu\n",pt->eProfile, pt->eLevel, pt->nProfileIndex);
++		if(pt->nProfileIndex >= 3 || pt->nProfileIndex == 0){
++			return -1;
++		}
++		
++	}
++#endif
+     return getOMX(node)->getParameter(node, index, params, size);
+ }
+-- 
+2.1.4
+

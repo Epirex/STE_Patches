@@ -1,0 +1,28 @@
+From 4f8c3d8172e9c5ca7b98b5bc55acd22ac8eda7b7 Mon Sep 17 00:00:00 2001
+From: Robert Rozic <rooobertinhooo@gmail.com>
+Date: Thu, 8 May 2014 18:49:03 +0200
+Subject: [PATCH 38/39] Fix shutdown/reboot bug
+
+---
+ libcutils/android_reboot.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/libcutils/android_reboot.c b/libcutils/android_reboot.c
+index 326d402..1094754 100644
+--- a/libcutils/android_reboot.c
++++ b/libcutils/android_reboot.c
+@@ -93,7 +93,11 @@ static void remount_ro(void)
+ 
+ 
+     /* Now poll /proc/mounts till it's done */
++#ifdef STE_HARDWARE
++    while (!remount_ro_done() && (cnt < 50)) {
++#else
+     while (!remount_ro_done() && (cnt < 3600)) {
++#endif
+         usleep(100000);
+         cnt++;
+     }
+-- 
+2.1.4
+

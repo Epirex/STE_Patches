@@ -1,0 +1,2939 @@
+From d59aaafbe5068109d11a8a7322764194abc82617 Mon Sep 17 00:00:00 2001
+From: Epirex <estebanguzzo@gmail.com>
+Date: Sun, 12 Jul 2015 02:47:42 -0300
+Subject: [PATCH] Remove Mediatek changes
+
+---
+ camera/Android.mk                                  |   5 -
+ camera/MtkCameraParameters.cpp                     | 330 ------------------
+ include/camera/MtkCameraParameters.h               | 387 ---------------------
+ include/media/AudioSystem.h                        |   4 -
+ include/media/IAudioFlinger.h                      |   4 -
+ include/media/IOMX.h                               |  24 --
+ include/media/MediaPlayerInterface.h               |   3 -
+ include/media/stagefright/CameraSource.h           |   6 -
+ include/media/stagefright/ColorConverter.h         |  12 -
+ include/media/stagefright/OMXCodec.h               |  20 +-
+ media/libmedia/AudioSystem.cpp                     |  23 --
+ media/libmedia/IAudioFlinger.cpp                   |  55 ---
+ media/libmedia/IOMX.cpp                            | 196 -----------
+ media/libmediaplayerservice/Android.mk             |   7 -
+ media/libmediaplayerservice/MediaPlayerFactory.cpp |  17 -
+ .../libmediaplayerservice/StagefrightRecorder.cpp  |  31 +-
+ media/libmediaplayerservice/StagefrightRecorder.h  |   7 -
+ media/libmediaplayerservice/nuplayer/NuPlayer.cpp  |   6 -
+ media/libstagefright/ACodec.cpp                    |  96 +----
+ media/libstagefright/Android.mk                    |  17 -
+ media/libstagefright/AwesomePlayer.cpp             |  17 -
+ media/libstagefright/CameraSource.cpp              |  30 +-
+ media/libstagefright/MediaCodecList.cpp            |  10 -
+ media/libstagefright/OMXClient.cpp                 |  50 ---
+ media/libstagefright/OMXCodec.cpp                  | 130 +------
+ .../StagefrightMetadataRetriever.cpp               |  18 +-
+ media/libstagefright/colorconversion/Android.mk    |   6 -
+ .../colorconversion/ColorConverter.cpp             |  28 --
+ media/libstagefright/include/AwesomePlayer.h       |   6 -
+ media/libstagefright/include/OMX.h                 |  20 --
+ media/libstagefright/include/OMXNodeInstance.h     |  30 --
+ media/libstagefright/omx/Android.mk                |  11 -
+ media/libstagefright/omx/OMX.cpp                   |  34 --
+ media/libstagefright/omx/OMXNodeInstance.cpp       |  45 ---
+ services/audioflinger/Android.mk                   |  12 -
+ services/audioflinger/AudioFlinger.cpp             |  34 --
+ services/audioflinger/AudioFlinger.h               |   5 -
+ services/audioflinger/AudioResampler.cpp           |  21 --
+ services/audioflinger/AudioResampler.h             |   3 -
+ services/audioflinger/Threads.cpp                  |  18 -
+ .../camera/libcameraservice/api1/CameraClient.cpp  |  43 ---
+ 41 files changed, 16 insertions(+), 1805 deletions(-)
+ delete mode 100644 camera/MtkCameraParameters.cpp
+ delete mode 100644 include/camera/MtkCameraParameters.h
+
+diff --git a/camera/Android.mk b/camera/Android.mk
+index 83eccd1..b361a2b 100644
+--- a/camera/Android.mk
++++ b/camera/Android.mk
+@@ -23,11 +23,6 @@ LOCAL_SRC_FILES:= \
+ 	ProCamera.cpp \
+ 	CameraBase.cpp \
+ 
+-ifeq ($(BOARD_HAS_MTK_HARDWARE),true)
+-	LOCAL_SRC_FILES+= \
+-		MtkCameraParameters.cpp
+-endif
+-
+ LOCAL_SHARED_LIBRARIES := \
+ 	libcutils \
+ 	libutils \
+diff --git a/camera/MtkCameraParameters.cpp b/camera/MtkCameraParameters.cpp
+deleted file mode 100644
+index da6bd8e..0000000
+--- a/camera/MtkCameraParameters.cpp
++++ /dev/null
+@@ -1,330 +0,0 @@
+-/* Copyright Statement:
+- *
+- * This software/firmware and related documentation ("MediaTek Software") are
+- * protected under relevant copyright laws. The information contained herein is
+- * confidential and proprietary to MediaTek Inc. and/or its licensors. Without
+- * the prior written permission of MediaTek inc. and/or its licensors, any
+- * reproduction, modification, use or disclosure of MediaTek Software, and
+- * information contained herein, in whole or in part, shall be strictly
+- * prohibited.
+- *
+- * MediaTek Inc. (C) 2010. All rights reserved.
+- *
+- * BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+- * THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+- * RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER
+- * ON AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL
+- * WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
+- * WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR
+- * NONINFRINGEMENT. NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH
+- * RESPECT TO THE SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY,
+- * INCORPORATED IN, OR SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES
+- * TO LOOK ONLY TO SUCH THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO.
+- * RECEIVER EXPRESSLY ACKNOWLEDGES THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO
+- * OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES CONTAINED IN MEDIATEK
+- * SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK SOFTWARE
+- * RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+- * STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S
+- * ENTIRE AND CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE
+- * RELEASED HEREUNDER WILL BE, AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE
+- * MEDIATEK SOFTWARE AT ISSUE, OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE
+- * CHARGE PAID BY RECEIVER TO MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+- *
+- * The following software/firmware and/or related documentation ("MediaTek
+- * Software") have been modified by MediaTek Inc. All revisions are subject to
+- * any receiver's applicable license agreements with MediaTek Inc.
+- */
+-
+-/*
+-**
+-** Copyright 2008, The Android Open Source Project
+-**
+-** Licensed under the Apache License, Version 2.0 (the "License");
+-** you may not use this file except in compliance with the License.
+-** You may obtain a copy of the License at
+-**
+-**     http://www.apache.org/licenses/LICENSE-2.0
+-**
+-** Unless required by applicable law or agreed to in writing, software
+-** distributed under the License is distributed on an "AS IS" BASIS,
+-** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-** See the License for the specific language governing permissions and
+-** limitations under the License.
+-*/
+-
+-#define LOG_TAG "MTKCameraParams"
+-#include <utils/Log.h>
+-
+-#include <string.h>
+-#include <stdlib.h>
+-#include <camera/MtkCameraParameters.h>
+-
+-namespace android {
+-
+-
+-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-//  App Mode.
+-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-const char MtkCameraParameters::PROPERTY_KEY_CLIENT_APPMODE[]   = "client.appmode";
+-//
+-const char MtkCameraParameters::APP_MODE_NAME_DEFAULT[]         = "Default";
+-const char MtkCameraParameters::APP_MODE_NAME_MTK_ENG[]         = "MtkEng";
+-const char MtkCameraParameters::APP_MODE_NAME_MTK_ATV[]         = "MtkAtv";
+-const char MtkCameraParameters::APP_MODE_NAME_MTK_S3D[]         = "MtkS3d";
+-const char MtkCameraParameters::APP_MODE_NAME_MTK_VT[]          = "MtkVt";
+-const char MtkCameraParameters::APP_MODE_NAME_MTK_PHOTO[]       = "MtkPhoto";
+-const char MtkCameraParameters::APP_MODE_NAME_MTK_VIDEO[]       = "MtkVideo";
+-const char MtkCameraParameters::APP_MODE_NAME_MTK_ZSD[]         = "MtkZsd";
+-
+-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-//  Scene Mode
+-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-const char MtkCameraParameters::SCENE_MODE_NORMAL[] = "normal";
+-
+-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-//  Face Beauty
+-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-const char MtkCameraParameters::KEY_FB_SMOOTH_LEVEL[]       = "fb-smooth-level";
+-const char MtkCameraParameters::KEY_FB_SMOOTH_LEVEL_MIN[]   = "fb-smooth-level-min";
+-const char MtkCameraParameters::KEY_FB_SMOOTH_LEVEL_MAX[]   = "fb-smooth-level-max";
+-//
+-const char MtkCameraParameters::KEY_FB_SKIN_COLOR[]         = "fb-skin-color";
+-const char MtkCameraParameters::KEY_FB_SKIN_COLOR_MIN[]     = "fb-skin-color-min";
+-const char MtkCameraParameters::KEY_FB_SKIN_COLOR_MAX[]     = "fb-skin-color-max";
+-//
+-const char MtkCameraParameters::KEY_FB_SHARP[]              = "fb-sharp";
+-const char MtkCameraParameters::KEY_FB_SHARP_MIN[]          = "fb-sharp-min";
+-const char MtkCameraParameters::KEY_FB_SHARP_MAX[]          = "fb-sharp-max";
+-//
+-const char MtkCameraParameters::KEY_FB_ENLARGE_EYE[]        = "fb-enlarge-eye";
+-const char MtkCameraParameters::KEY_FB_ENLARGE_EYE_MIN[]    = "fb-enlarge-eye-min";
+-const char MtkCameraParameters::KEY_FB_ENLARGE_EYE_MAX[]    = "fb-enlarge-eye-max";
+-//
+-const char MtkCameraParameters::KEY_FB_SLIM_FACE[]          = "fb-slim-face";
+-const char MtkCameraParameters::KEY_FB_SLIM_FACE_MIN[]      = "fb-slim-face-min";
+-const char MtkCameraParameters::KEY_FB_SLIM_FACE_MAX[]      = "fb-slim-face-max";
+-//
+-const char MtkCameraParameters::KEY_FB_EXTREME_BEAUTY[]     = "fb-extreme-beauty";
+-//
+-const char MtkCameraParameters::KEY_FACE_BEAUTY[]           = "face-beauty";
+-
+-
+-//
+-const char MtkCameraParameters::KEY_EXPOSURE[] = "exposure";
+-const char MtkCameraParameters::KEY_EXPOSURE_METER[] = "exposure-meter";
+-const char MtkCameraParameters::KEY_ISO_SPEED[] = "iso-speed";
+-const char MtkCameraParameters::KEY_AE_MODE[] = "ae-mode";
+-const char MtkCameraParameters::KEY_FOCUS_METER[] = "focus-meter";
+-const char MtkCameraParameters::KEY_EDGE[] = "edge";
+-const char MtkCameraParameters::KEY_HUE[] = "hue";
+-const char MtkCameraParameters::KEY_SATURATION[] = "saturation";
+-const char MtkCameraParameters::KEY_BRIGHTNESS[] = "brightness";
+-const char MtkCameraParameters::KEY_CONTRAST[] = "contrast";
+-const char MtkCameraParameters::KEY_AF_LAMP_MODE [] = "aflamp-mode";
+-const char MtkCameraParameters::KEY_STEREO_3D_PREVIEW_SIZE[] = "stereo3d-preview-size";
+-const char MtkCameraParameters::KEY_STEREO_3D_PICTURE_SIZE[] = "stereo3d-picture-size";
+-const char MtkCameraParameters::KEY_STEREO_3D_TYPE [] = "stereo3d-type";
+-const char MtkCameraParameters::KEY_STEREO_3D_MODE [] = "stereo3d-mode";
+-const char MtkCameraParameters::KEY_STEREO_3D_IMAGE_FORMAT [] = "stereo3d-image-format";
+-
+-// ZSD
+-const char MtkCameraParameters::KEY_ZSD_MODE[] = "zsd-mode"; 
+-const char MtkCameraParameters::KEY_SUPPORTED_ZSD_MODE[] = "zsd-supported";
+-//
+-const char MtkCameraParameters::KEY_FPS_MODE[] = "fps-mode";
+-//
+-const char MtkCameraParameters::KEY_FOCUS_DRAW[] = "af-draw";
+-//
+-const char MtkCameraParameters::KEY_CAPTURE_MODE[] = "cap-mode";
+-const char MtkCameraParameters::KEY_SUPPORTED_CAPTURE_MODES[] = "cap-mode-values";
+-const char MtkCameraParameters::KEY_CAPTURE_PATH[] = "capfname";
+-const char MtkCameraParameters::KEY_BURST_SHOT_NUM[] = "burst-num";
+-//
+-const char MtkCameraParameters::KEY_MATV_PREVIEW_DELAY[] = "tv-delay";
+-const char MtkCameraParameters::KEY_PANORAMA_IDX[] = "pano-idx";
+-const char MtkCameraParameters::KEY_PANORAMA_DIR[] = "pano-dir";
+-
+-// Values for KEY_EXPOSURE
+-const char MtkCameraParameters::EXPOSURE_METER_SPOT[] = "spot";
+-const char MtkCameraParameters::EXPOSURE_METER_CENTER[] = "center";
+-const char MtkCameraParameters::EXPOSURE_METER_AVERAGE[] = "average";
+-
+-// Valeus for KEY_ISO_SPEED
+-const char MtkCameraParameters::ISO_SPEED_AUTO[] = "auto";
+-const char MtkCameraParameters::ISO_SPEED_100[] = "100";
+-const char MtkCameraParameters::ISO_SPEED_200[] = "200";
+-const char MtkCameraParameters::ISO_SPEED_400[] = "400";
+-const char MtkCameraParameters::ISO_SPEED_800[] = "800";
+-const char MtkCameraParameters::ISO_SPEED_1600[] = "1600";
+-
+-// Values for KEY_AE_MODE = "ae-mode"
+-
+-// Values for KEY_FOCUS_METER
+-const char MtkCameraParameters::FOCUS_METER_SPOT[] = "spot";
+-const char MtkCameraParameters::FOCUS_METER_MULTI[] = "multi";
+-
+-// AWB2PASS
+-const char MtkCameraParameters::KEY_AWB2PASS[] = "awb-2pass"; 
+-
+-
+-//
+-//  Camera Mode
+-const char MtkCameraParameters::KEY_CAMERA_MODE[] = "mtk-cam-mode";
+-// Values for KEY_CAMERA_MODE
+-const int MtkCameraParameters::CAMERA_MODE_NORMAL  = 0;
+-const int MtkCameraParameters::CAMERA_MODE_MTK_PRV = 1;
+-const int MtkCameraParameters::CAMERA_MODE_MTK_VDO = 2;
+-const int MtkCameraParameters::CAMERA_MODE_MTK_VT  = 3;
+-
+-// Values for KEY_FPS_MODE
+-const int MtkCameraParameters::FPS_MODE_NORMAL = 0;
+-const int MtkCameraParameters::FPS_MODE_FIX = 1;
+-
+-// Values for raw save mode
+-
+-// Values for KEY_FOCUS_DRAW
+-
+-// Values for capture mode
+-const char MtkCameraParameters::CAPTURE_MODE_PANORAMA_SHOT[] = "panoramashot";
+-const char MtkCameraParameters::CAPTURE_MODE_BURST_SHOT[] = "burstshot";
+-const char MtkCameraParameters::CAPTURE_MODE_NORMAL[] = "normal";
+-const char MtkCameraParameters::CAPTURE_MODE_BEST_SHOT[] = "bestshot";
+-const char MtkCameraParameters::CAPTURE_MODE_EV_BRACKET_SHOT[] = "evbracketshot";
+-const char MtkCameraParameters::CAPTURE_MODE_SMILE_SHOT[] = "smileshot";
+-const char MtkCameraParameters::CAPTURE_MODE_MAV_SHOT[] = "mav"; 
+-const char MtkCameraParameters::CAPTURE_MODE_AUTO_PANORAMA_SHOT[] = "autorama"; 
+-const char MtkCameraParameters::CAPTURE_MODE_MOTION_TRACK_SHOT[] = "motiontrack"; 
+-const char MtkCameraParameters::CAPTURE_MODE_HDR_SHOT[] = "hdr"; 
+-const char MtkCameraParameters::CAPTURE_MODE_ASD_SHOT[] = "asd"; 
+-const char MtkCameraParameters::CAPTURE_MODE_ZSD_SHOT[] = "zsd";
+-const char MtkCameraParameters::CAPTURE_MODE_PANO_3D[] = "pano_3d"; 
+-const char MtkCameraParameters::CAPTURE_MODE_SINGLE_3D[] = "single_3d"; 
+-const char MtkCameraParameters::CAPTURE_MODE_FACE_BEAUTY[] = "face_beauty"; 
+-const char MtkCameraParameters::CAPTURE_MODE_CONTINUOUS_SHOT[] = "continuousshot";
+-const char MtkCameraParameters::CAPTURE_MODE_MULTI_MOTION[] = "multi_motion";
+-const char MtkCameraParameters::CAPTURE_MODE_GESTURE_SHOT[] = "gestureshot";
+-
+-// Values for panorama direction settings
+-const char MtkCameraParameters::PANORAMA_DIR_RIGHT[] = "right";
+-const char MtkCameraParameters::PANORAMA_DIR_LEFT[] = "left";
+-const char MtkCameraParameters::PANORAMA_DIR_TOP[] = "top";
+-const char MtkCameraParameters::PANORAMA_DIR_DOWN[] = "down";
+-
+-//
+-const int MtkCameraParameters::ENABLE = 1;
+-const int MtkCameraParameters::DISABLE = 0;
+-
+-// Values for KEY_EDGE, KEY_HUE, KEY_SATURATION, KEY_BRIGHTNESS, KEY_CONTRAST
+-const char MtkCameraParameters::HIGH[] = "high";
+-const char MtkCameraParameters::MIDDLE[] = "middle";
+-const char MtkCameraParameters::LOW[] = "low";
+-
+-// Preview Internal Format.
+-const char MtkCameraParameters::KEY_PREVIEW_INT_FORMAT[] = "prv-int-fmt";
+-
+-// Pixel color formats for KEY_PREVIEW_FORMAT, KEY_PICTURE_FORMAT,
+-// and KEY_VIDEO_FRAME_FORMAT
+-const char MtkCameraParameters::PIXEL_FORMAT_YUV420I[] = "yuv420i-yyuvyy-3plane";
+-const char MtkCameraParameters::PIXEL_FORMAT_YV12_GPU[] = "yv12-gpu";
+-const char MtkCameraParameters::PIXEL_FORMAT_YUV422I_UYVY[] = "yuv422i-uyvy";
+-const char MtkCameraParameters::PIXEL_FORMAT_YUV422I_VYUY[] = "yuv422i-vyuy";
+-const char MtkCameraParameters::PIXEL_FORMAT_YUV422I_YVYU[] = "yuv422i-yvyu";
+-
+-const char MtkCameraParameters::PIXEL_FORMAT_BAYER8[] = "bayer8"; 
+-const char MtkCameraParameters::PIXEL_FORMAT_BAYER10[] = "bayer10";  
+-
+-const char MtkCameraParameters::KEY_BRIGHTNESS_VALUE[] = "brightness_value";
+-
+-// ISP Operation mode for meta mode use 
+-const char MtkCameraParameters::KEY_ISP_MODE[] = "isp-mode"; 
+-// AF 
+-const char MtkCameraParameters::KEY_AF_X[] = "af-x"; 
+-const char MtkCameraParameters::KEY_AF_Y[] = "af-y"; 
+-// Effect 
+-const char MtkCameraParameters::EFFECT_SEPIA_BLUE[] = "sepiablue";
+-const char MtkCameraParameters::EFFECT_SEPIA_GREEN[] = "sepiagreen";
+-
+-//
+-//  on/off => FIXME: should be replaced with TRUE[]
+-const char MtkCameraParameters::ON[] = "on";
+-const char MtkCameraParameters::OFF[] = "off";
+-// 
+-const char MtkCameraParameters::WHITE_BALANCE_TUNGSTEN[] = "tungsten";
+-//
+-const char MtkCameraParameters::ISO_SPEED_ENG[] = "iso-speed-eng";
+-const char MtkCameraParameters::KEY_RAW_SAVE_MODE[] = "rawsave-mode";
+-const char MtkCameraParameters::KEY_RAW_PATH[] = "rawfname";
+-
+-const char MtkCameraParameters::KEY_FAST_CONTINUOUS_SHOT[] = "fast-continuous-shot";
+-
+-const char MtkCameraParameters::KEY_CSHOT_INDICATOR[] = "cshot-indicator";
+-
+-// AF EM MODE
+-const char MtkCameraParameters::KEY_FOCUS_ENG_MODE[]		= "afeng-mode";
+-const char MtkCameraParameters::KEY_FOCUS_ENG_STEP[] 		= "afeng-pos";
+-const char MtkCameraParameters::KEY_FOCUS_ENG_MAX_STEP[] 	= "afeng-max-focus-step";
+-const char MtkCameraParameters::KEY_FOCUS_ENG_MIN_STEP[] 	= "afeng-min-focus-step";
+-const char MtkCameraParameters::KEY_FOCUS_ENG_BEST_STEP[]   = "afeng-best-focus-step";
+-const char MtkCameraParameters::KEY_RAW_DUMP_FLAG[]         = "afeng_raw_dump_flag";
+-const char MtkCameraParameters::KEY_PREVIEW_DUMP_RESOLUTION[] = "preview-dump-resolution";
+-// Values for KEY_PREVIEW_DUMP_RESOLUTION
+-const int MtkCameraParameters::PREVIEW_DUMP_RESOLUTION_NORMAL  = 0;
+-const int MtkCameraParameters::PREVIEW_DUMP_RESOLUTION_CROP  = 1;
+-//
+-const char MtkCameraParameters::KEY_MAX_NUM_DETECTED_OBJECT[] = "max-num-ot";
+-//
+-const char MtkCameraParameters::KEY_VIDEO_HDR[] = "video-hdr"; 
+-
+-// KEY for [Engineer Mode] Add new camera paramters for new requirements
+-const char MtkCameraParameters::KEY_ENG_AE_ENABLE[] = "eng-ae-enable";
+-const char MtkCameraParameters::KEY_ENG_PREVIEW_SHUTTER_SPEED[] = "eng-preview-shutter-speed";
+-const char MtkCameraParameters::KEY_ENG_PREVIEW_SENSOR_GAIN[] = "eng-preview-sensor-gain";
+-const char MtkCameraParameters::KEY_ENG_PREVIEW_ISP_GAIN[] = "eng-preview-isp-gain";
+-const char MtkCameraParameters::KEY_ENG_PREVIEW_AE_INDEX[] = "eng-preview-ae-index";
+-const char MtkCameraParameters::KEY_ENG_CAPTURE_SENSOR_GAIN[] = "eng-capture-sensor-gain";
+-const char MtkCameraParameters::KEY_ENG_CAPTURE_ISP_GAIN[] = "eng-capture-isp-gain";
+-const char MtkCameraParameters::KEY_ENG_CAPTURE_SHUTTER_SPEED[] = "eng-capture-shutter-speed";
+-const char MtkCameraParameters::KEY_ENG_CAPTURE_ISO[] = "eng-capture-iso";
+-const char MtkCameraParameters::KEY_ENG_FLASH_DUTY_VALUE[] = "eng-flash-duty-value";
+-const char MtkCameraParameters::KEY_ENG_FLASH_DUTY_MIN[] = "eng-flash-duty-min";
+-const char MtkCameraParameters::KEY_ENG_FLASH_DUTY_MAX[] = "eng-flash-duty-max";
+-const char MtkCameraParameters::KEY_ENG_ZSD_ENABLE[] = "eng-zsd-enable";
+-const char MtkCameraParameters::KEY_SENSOR_TYPE[] = "sensor-type";
+-const char MtkCameraParameters::KEY_ENG_PREVIEW_FPS[] = "eng-preview-fps";
+-const char MtkCameraParameters::KEY_ENG_MSG[] = "eng-msg";
+-const int  MtkCameraParameters::KEY_ENG_FLASH_DUTY_DEFAULT_VALUE = -1;
+-const int  MtkCameraParameters::KEY_ENG_FLASH_STEP_DEFAULT_VALUE = -1;
+-const char MtkCameraParameters::KEY_ENG_FLASH_STEP_MIN[] = "eng-flash-step-min";
+-const char MtkCameraParameters::KEY_ENG_FLASH_STEP_MAX[] = "eng-flash-step-max";
+-const char MtkCameraParameters::KEY_ENG_FOCUS_FULLSCAN_FRAME_INTERVAL[] = "eng-focus-fullscan-frame-interval";
+-const char MtkCameraParameters::KEY_ENG_FOCUS_FULLSCAN_FRAME_INTERVAL_MAX[] = "eng-focus-fullscan-frame-interval-max";
+-const char MtkCameraParameters::KEY_ENG_FOCUS_FULLSCAN_FRAME_INTERVAL_MIN[] = "eng-focus-fullscan-frame-interval-min";
+-const int  MtkCameraParameters::KEY_ENG_FOCUS_FULLSCAN_FRAME_INTERVAL_MAX_DEFAULT = 65535;
+-const int  MtkCameraParameters::KEY_ENG_FOCUS_FULLSCAN_FRAME_INTERVAL_MIN_DEFAULT = 0;
+-const char MtkCameraParameters::KEY_ENG_PREVIEW_FRAME_INTERVAL_IN_US[] = "eng-preview-frame-interval-in-us";
+-const char MtkCameraParameters::KEY_ENG_PARAMETER1[] = "key-eng-parameter1";
+-const char MtkCameraParameters::KEY_ENG_PARAMETER2[] = "key-eng-parameter2";
+-const char MtkCameraParameters::KEY_ENG_PARAMETER3[] = "key-eng-parameter3";
+-
+-const char MtkCameraParameters::KEY_ENG_SAVE_SHADING_TABLE[] = "eng-save-shading-table";
+-const char MtkCameraParameters::KEY_ENG_SHADING_TABLE[] = "eng-shading-table";
+-const int MtkCameraParameters::KEY_ENG_SHADING_TABLE_AUTO = 0;
+-const int MtkCameraParameters::KEY_ENG_SHADING_TABLE_LOW = 1;
+-const int MtkCameraParameters::KEY_ENG_SHADING_TABLE_MIDDLE = 2;
+-const int MtkCameraParameters::KEY_ENG_SHADING_TABLE_HIGH = 3;
+-const int MtkCameraParameters::KEY_ENG_SHADING_TABLE_TSF = 4;
+-
+-// KEY for [Engineer Mode] Add new camera paramters for ev calibration
+-const char MtkCameraParameters::KEY_ENG_EV_CALBRATION_OFFSET_VALUE[] = "eng-ev-cal-offset";
+-
+-#ifdef MTK_SLOW_MOTION_VIDEO_SUPPORT
+-// High Speed Video Record
+-const char MtkCameraParameters::KEY_HSVR_PRV_SIZE[] = "hsvr-prv-size";
+-const char MtkCameraParameters::KEY_SUPPORTED_HSVR_PRV_SIZE[] = "hsvr-prv-size-values";
+-const char MtkCameraParameters::KEY_HSVR_PRV_FPS[] = "hsvr-prv-fps";
+-const char MtkCameraParameters::KEY_SUPPORTED_HSVR_PRV_FPS[] = "hsvr-prv-fps-values";
+-#endif
+-const char MtkCameraParameters::KEY_DXOEIS_ONOFF[] = "dxo-eis";
+-const char MtkCameraParameters::KEY_FIX_EXPOSURE_TIME[] = "fix-exposure-time";
+-
+-}; // namespace android
+diff --git a/include/camera/MtkCameraParameters.h b/include/camera/MtkCameraParameters.h
+deleted file mode 100644
+index a4d9f22..0000000
+--- a/include/camera/MtkCameraParameters.h
++++ /dev/null
+@@ -1,387 +0,0 @@
+-/* Copyright Statement:
+- *
+- * This software/firmware and related documentation ("MediaTek Software") are
+- * protected under relevant copyright laws. The information contained herein is
+- * confidential and proprietary to MediaTek Inc. and/or its licensors. Without
+- * the prior written permission of MediaTek inc. and/or its licensors, any
+- * reproduction, modification, use or disclosure of MediaTek Software, and
+- * information contained herein, in whole or in part, shall be strictly
+- * prohibited.
+- *
+- * MediaTek Inc. (C) 2010. All rights reserved.
+- *
+- * BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+- * THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+- * RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER
+- * ON AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL
+- * WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
+- * WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR
+- * NONINFRINGEMENT. NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH
+- * RESPECT TO THE SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY,
+- * INCORPORATED IN, OR SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES
+- * TO LOOK ONLY TO SUCH THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO.
+- * RECEIVER EXPRESSLY ACKNOWLEDGES THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO
+- * OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES CONTAINED IN MEDIATEK
+- * SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK SOFTWARE
+- * RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+- * STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S
+- * ENTIRE AND CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE
+- * RELEASED HEREUNDER WILL BE, AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE
+- * MEDIATEK SOFTWARE AT ISSUE, OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE
+- * CHARGE PAID BY RECEIVER TO MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+- *
+- * The following software/firmware and/or related documentation ("MediaTek
+- * Software") have been modified by MediaTek Inc. All revisions are subject to
+- * any receiver's applicable license agreements with MediaTek Inc.
+- */
+-
+-/*
+- * Copyright (C) 2008 The Android Open Source Project
+- *
+- * Licensed under the Apache License, Version 2.0 (the "License");
+- * you may not use this file except in compliance with the License.
+- * You may obtain a copy of the License at
+- *
+- *      http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS,
+- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- * See the License for the specific language governing permissions and
+- * limitations under the License.
+- */
+-
+-#ifndef ANDROID_HARDWARE_MTK_CAMERA_PARAMETERS_H
+-#define ANDROID_HARDWARE_MTK_CAMERA_PARAMETERS_H
+-
+-#include <camera/CameraParameters.h>
+-
+-namespace android {
+-
+-
+-/**  
+- * @class      MtkCameraParameters
+- * @brief      MTK-proprietary camera parameters.
+- * @details    This class is derived from CameraParameters and defines MTK-proprietary camera parameters.
+- */
+-class MtkCameraParameters : public CameraParameters
+-{
+-public:
+-    MtkCameraParameters() : CameraParameters() {}
+-    MtkCameraParameters(const String8 &params) { unflatten(params); }
+-    ~MtkCameraParameters()  {}
+-
+-    MtkCameraParameters& operator=(CameraParameters const& params)
+-    {
+-        unflatten(params.flatten());
+-        return  (*this);
+-    }
+-    //
+-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-//  App Mode.
+-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-    static const char PROPERTY_KEY_CLIENT_APPMODE[];
+-    //
+-    static const char APP_MODE_NAME_DEFAULT[];
+-    static const char APP_MODE_NAME_MTK_ENG[];
+-    static const char APP_MODE_NAME_MTK_ATV[];
+-    static const char APP_MODE_NAME_MTK_S3D[];
+-    static const char APP_MODE_NAME_MTK_VT[];
+-    static const char APP_MODE_NAME_MTK_PHOTO[];
+-    static const char APP_MODE_NAME_MTK_VIDEO[];
+-    static const char APP_MODE_NAME_MTK_ZSD[];
+-    //
+-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-//  Scene Mode
+-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-    static const char SCENE_MODE_NORMAL[];
+-    //
+-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-//  Face Beauty
+-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-    static const char KEY_FB_SMOOTH_LEVEL[];
+-    static const char KEY_FB_SMOOTH_LEVEL_MIN[];
+-    static const char KEY_FB_SMOOTH_LEVEL_MAX[];
+-    //
+-    static const char KEY_FB_SKIN_COLOR[];
+-    static const char KEY_FB_SKIN_COLOR_MIN[];
+-    static const char KEY_FB_SKIN_COLOR_MAX[];
+-    //
+-    static const char KEY_FB_SHARP[];
+-    static const char KEY_FB_SHARP_MIN[];
+-    static const char KEY_FB_SHARP_MAX[];
+-    //
+-    static const char KEY_FB_ENLARGE_EYE[];
+-    static const char KEY_FB_ENLARGE_EYE_MIN[];
+-    static const char KEY_FB_ENLARGE_EYE_MAX[];
+-    //
+-    static const char KEY_FB_SLIM_FACE[];
+-    static const char KEY_FB_SLIM_FACE_MIN[];
+-    static const char KEY_FB_SLIM_FACE_MAX[];
+-    //
+-    static const char KEY_FB_EXTREME_BEAUTY[];
+-    //
+-    static const char KEY_FACE_BEAUTY[];
+-    //
+-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-//  
+-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-    static const char KEY_EXPOSURE[];
+-    static const char KEY_EXPOSURE_METER[];
+-    static const char KEY_ISO_SPEED[];
+-    static const char KEY_AE_MODE[];
+-    static const char KEY_FOCUS_METER[];
+-    static const char KEY_EDGE[];
+-    static const char KEY_HUE[];
+-    static const char KEY_SATURATION[];
+-    static const char KEY_BRIGHTNESS[];
+-    static const char KEY_CONTRAST[];
+-    static const char KEY_ZSD_MODE[];	
+-    static const char KEY_SUPPORTED_ZSD_MODE[];
+-    static const char KEY_AWB2PASS[];	
+-    static const char KEY_AF_LAMP_MODE [];
+-
+-    static const char KEY_STEREO_3D_PREVIEW_SIZE[];
+-    static const char KEY_STEREO_3D_PICTURE_SIZE[];    
+-    static const char KEY_STEREO_3D_TYPE [];		
+-    static const char KEY_STEREO_3D_MODE [];
+-    static const char KEY_STEREO_3D_IMAGE_FORMAT [];	
+-    //
+-    static const char KEY_FPS_MODE[];       // normal,fix
+-    //
+-    static const char KEY_FOCUS_DRAW[];     // 0,1
+-    //
+-    static const char KEY_CAPTURE_MODE[];   // normal,bestshot,evbracketshot,burstshot,smileshot,panoramashot
+-    static const char KEY_SUPPORTED_CAPTURE_MODES[];
+-    static const char KEY_CAPTURE_PATH[];
+-    static const char KEY_BURST_SHOT_NUM[];
+-    //
+-    static const char KEY_MATV_PREVIEW_DELAY[];
+-    //
+-    static const char KEY_PANORAMA_IDX[];
+-    static const char KEY_PANORAMA_DIR[];   // right,left,top,bottom
+-    //
+-    static const char KEY_SENSOR_DEV[];    // main,sub,atv
+-    static const char KEY_SUPPORTED_SENSOR_DEVS[];
+-	
+-    // Values for KEY_EXPOSURE
+-    static const char EXPOSURE_METER_SPOT[];
+-    static const char EXPOSURE_METER_CENTER[];
+-    static const char EXPOSURE_METER_AVERAGE[];
+-
+-    // Valeus for KEY_ISO_SPEED
+-    static const char ISO_SPEED_AUTO[];
+-    static const char ISO_SPEED_100[];
+-    static const char ISO_SPEED_200[];
+-    static const char ISO_SPEED_400[];
+-    static const char ISO_SPEED_800[];
+-    static const char ISO_SPEED_1600[];
+-
+-    // Values for KEY_FOCUS_METER
+-    static const char FOCUS_METER_SPOT[];
+-    static const char FOCUS_METER_MULTI[];
+-
+-    static const char KEY_CAMERA_MODE[];
+-    // Values for KEY_CAMERA_MODE
+-    static const int CAMERA_MODE_NORMAL;
+-    static const int CAMERA_MODE_MTK_PRV;
+-    static const int CAMERA_MODE_MTK_VDO;
+-    static const int CAMERA_MODE_MTK_VT;
+-
+-    // Values for KEY_FPS_MODE
+-    static const int FPS_MODE_NORMAL;
+-    static const int FPS_MODE_FIX;
+-
+-    // Values for KEY_CAPTURE_MODE
+-    static const char CAPTURE_MODE_PANORAMA_SHOT[];
+-    static const char CAPTURE_MODE_BURST_SHOT[];
+-    static const char CAPTURE_MODE_NORMAL[];
+-    static const char CAPTURE_MODE_BEST_SHOT[];
+-    static const char CAPTURE_MODE_EV_BRACKET_SHOT[];
+-    static const char CAPTURE_MODE_SMILE_SHOT[];
+-    static const char CAPTURE_MODE_AUTO_PANORAMA_SHOT[]; 
+-    static const char CAPTURE_MODE_MOTION_TRACK_SHOT[]; 
+-    static const char CAPTURE_MODE_MAV_SHOT[]; 
+-    static const char CAPTURE_MODE_HDR_SHOT[]; 
+-    static const char CAPTURE_MODE_ASD_SHOT[];
+-    static const char CAPTURE_MODE_ZSD_SHOT[];
+-    static const char CAPTURE_MODE_PANO_3D[]; 
+-    static const char CAPTURE_MODE_SINGLE_3D[]; 
+-    static const char CAPTURE_MODE_FACE_BEAUTY[]; 	
+-    static const char CAPTURE_MODE_CONTINUOUS_SHOT[];
+-    static const char CAPTURE_MODE_MULTI_MOTION[];
+-    static const char CAPTURE_MODE_GESTURE_SHOT[];
+-
+-    // Values for KEY_PANORAMA_DIR
+-    static const char PANORAMA_DIR_RIGHT[];
+-    static const char PANORAMA_DIR_LEFT[];
+-    static const char PANORAMA_DIR_TOP[];
+-    static const char PANORAMA_DIR_DOWN[];
+-    //
+-    static const int ENABLE;
+-    static const int DISABLE;
+-
+-    // Values for KEY_EDGE, KEY_HUE, KEY_SATURATION, KEY_BRIGHTNESS, KEY_CONTRAST
+-    static const char HIGH[];
+-    static const char MIDDLE[];
+-    static const char LOW[];
+-
+-    // Preview Internal Format.
+-    static const char KEY_PREVIEW_INT_FORMAT[];
+-
+-    // Pixel color formats for KEY_PREVIEW_FORMAT, KEY_PICTURE_FORMAT,
+-    // and KEY_VIDEO_FRAME_FORMAT
+-    static const char PIXEL_FORMAT_YUV420I[]; // I420
+-
+-    /**
+-     * @var PIXEL_FORMAT_YV12_GPU
+-     *
+-     * GPU YUV format:
+-     *
+-     * YV12 is a 4:2:0 YCrCb planar format comprised of a WxH Y plane followed
+-     * by (W/2) x (H/2) Cr and Cb planes.
+-     *
+-     * This format assumes
+-     * - an even width
+-     * - an even height
+-     * - a vertical stride equal to the height
+-     * - a horizontal stride multiple of 32/16/16 pixels for y/cr/cb respectively
+-     *   i.e.
+-     *   y_stride = ALIGN(width, 32)
+-     *   c_stride = y_stride / 2
+-     *
+-     *   y_size = y_stride * height
+-     *   c_size = c_stride * height / 2
+-     *   size = y_size + c_size * 2
+-     *   cr_offset = y_size
+-     *   cb_offset = y_size + c_size
+-     *
+-     *   for example:
+-     *      width/height = 176x144
+-     *      y stride     = 192x144
+-     *      cr stride    = 96x72
+-     *      cb stride    = 96x72
+-     *   
+-     */
+-    static const char PIXEL_FORMAT_YV12_GPU[];
+-
+-    /*
+-     *  YUV422 format, 1 plane (UYVY)
+-     *
+-     *  Effective bits per pixel : 16 
+-     *
+-     *  Y sample at every pixel, U and V sampled at every second pixel horizontally on each line. 
+-     *  A macropixel contains 2 pixels in 1 uint32_t.
+-     *
+-     */
+-    static const char PIXEL_FORMAT_YUV422I_UYVY[];   
+-    //
+-    static const char PIXEL_FORMAT_YUV422I_VYUY[];
+-    static const char PIXEL_FORMAT_YUV422I_YVYU[];
+-    static const char PIXEL_FORMAT_BAYER8[]; 
+-    static const char PIXEL_FORMAT_BAYER10[];    
+-
+-    /**
+-     * @var KEY_BRIGHTNESS_VALUE
+-     *
+-     * This is a key string of brightness value, scaled by 10.
+-     *
+-     */
+-    static const char KEY_BRIGHTNESS_VALUE[];
+-
+-    // ISP Operation mode for meta mode use 
+-    static const char KEY_ISP_MODE[];
+-    // AF 
+-    static const char KEY_AF_X[]; 
+-    static const char KEY_AF_Y[]; 
+-    static const char KEY_FOCUS_ENG_MAX_STEP[];
+-    static const char KEY_FOCUS_ENG_MIN_STEP[];
+-    static const char KEY_FOCUS_ENG_BEST_STEP[];
+-    static const char KEY_RAW_DUMP_FLAG[];
+-    static const char KEY_PREVIEW_DUMP_RESOLUTION[];
+-    static const int  PREVIEW_DUMP_RESOLUTION_NORMAL;
+-    static const int  PREVIEW_DUMP_RESOLUTION_CROP;
+-
+-    // Values for effect 
+-    static const char EFFECT_SEPIA_BLUE[];
+-    static const char EFFECT_SEPIA_GREEN[];    
+-    // Values for AWB 
+-    static const char WHITE_BALANCE_TUNGSTEN[];
+-    // Eng
+-    static const char ISO_SPEED_ENG[];
+-    static const char KEY_FOCUS_ENG_MODE[]; // 0,1,2,3 (0: normal)
+-    static const char KEY_FOCUS_ENG_STEP[];	
+-    static const char KEY_RAW_SAVE_MODE[];  // on, off
+-    static const char KEY_RAW_PATH[];	
+-
+-	// KEY for Continuous shot speed
+-    static const char KEY_FAST_CONTINUOUS_SHOT[];
+-
+-    static const char KEY_VIDEO_HDR[];
+-
+-    static const char KEY_MAX_NUM_DETECTED_OBJECT[];
+-
+-    // KEY for c_shot indicator 
+-    static const char KEY_CSHOT_INDICATOR[];
+-
+-    // KEY for [Engineer Mode] Add new camera paramters for new requirements
+-    static const char KEY_ENG_AE_ENABLE[];
+-    static const char KEY_ENG_PREVIEW_SHUTTER_SPEED[];
+-    static const char KEY_ENG_PREVIEW_SENSOR_GAIN[];
+-    static const char KEY_ENG_PREVIEW_ISP_GAIN[];
+-    static const char KEY_ENG_PREVIEW_AE_INDEX[];
+-    static const char KEY_ENG_CAPTURE_SENSOR_GAIN[];
+-    static const char KEY_ENG_CAPTURE_ISP_GAIN[];
+-    static const char KEY_ENG_CAPTURE_SHUTTER_SPEED[];
+-    static const char KEY_ENG_CAPTURE_ISO[];
+-    static const char KEY_ENG_FLASH_DUTY_VALUE[];
+-    static const char KEY_ENG_FLASH_DUTY_MIN[];
+-    static const char KEY_ENG_FLASH_DUTY_MAX[];
+-    static const char KEY_ENG_ZSD_ENABLE[];
+-    static const char KEY_SENSOR_TYPE[];
+-    static const char KEY_ENG_PREVIEW_FPS[];
+-    static const char KEY_ENG_MSG[];
+-    static const int  KEY_ENG_FLASH_DUTY_DEFAULT_VALUE;
+-    static const int  KEY_ENG_FLASH_STEP_DEFAULT_VALUE;
+-    static const char KEY_ENG_FLASH_STEP_MIN[];
+-    static const char KEY_ENG_FLASH_STEP_MAX[];
+-    static const char KEY_ENG_FOCUS_FULLSCAN_FRAME_INTERVAL[];
+-    static const char KEY_ENG_FOCUS_FULLSCAN_FRAME_INTERVAL_MAX[];
+-    static const char KEY_ENG_FOCUS_FULLSCAN_FRAME_INTERVAL_MIN[];
+-    static const int  KEY_ENG_FOCUS_FULLSCAN_FRAME_INTERVAL_MAX_DEFAULT;
+-    static const int  KEY_ENG_FOCUS_FULLSCAN_FRAME_INTERVAL_MIN_DEFAULT;
+-    static const char KEY_ENG_PREVIEW_FRAME_INTERVAL_IN_US[];
+-    static const char KEY_ENG_PARAMETER1[];
+-    static const char KEY_ENG_PARAMETER2[];
+-    static const char KEY_ENG_PARAMETER3[];
+-
+-    static const char KEY_ENG_SAVE_SHADING_TABLE[];
+-    static const char KEY_ENG_SHADING_TABLE[];
+-    static const int KEY_ENG_SHADING_TABLE_AUTO;
+-    static const int KEY_ENG_SHADING_TABLE_LOW;
+-    static const int KEY_ENG_SHADING_TABLE_MIDDLE;
+-    static const int KEY_ENG_SHADING_TABLE_HIGH;
+-    static const int KEY_ENG_SHADING_TABLE_TSF;
+-
+-    // KEY for [Engineer Mode] Add new camera paramters for ev calibration
+-    static const char KEY_ENG_EV_CALBRATION_OFFSET_VALUE[];
+-
+-#ifdef MTK_SLOW_MOTION_VIDEO_SUPPORT
+-    // High Speed Video Record
+-    static const char KEY_HSVR_PRV_SIZE[];
+-    static const char KEY_SUPPORTED_HSVR_PRV_SIZE[];
+-    static const char KEY_HSVR_PRV_FPS[];
+-    static const char KEY_SUPPORTED_HSVR_PRV_FPS[];
+-#endif
+-
+-    static const char KEY_DXOEIS_ONOFF[];
+-    static const char KEY_FIX_EXPOSURE_TIME[];
+-	//
+-public:     ////    on/off => FIXME: should be replaced with TRUE[]
+-    static const char ON[];
+-    static const char OFF[];
+-};
+-
+-}; // namespace android
+-
+-#endif
+diff --git a/include/media/AudioSystem.h b/include/media/AudioSystem.h
+index e06eac5..1c23e7c 100644
+--- a/include/media/AudioSystem.h
++++ b/include/media/AudioSystem.h
+@@ -41,10 +41,6 @@ public:
+     /* These are static methods to control the system-wide AudioFlinger
+      * only privileged processes can have access to them
+      */
+-#ifdef MTK_HARDWARE
+-    static status_t SetAudioData(int par1, size_t len, void *ptr);
+-    static status_t GetAudioData(int par1, size_t len, void *ptr);
+-#endif
+ 
+     // mute/unmute microphone
+     static status_t muteMicrophone(bool state);
+diff --git a/include/media/IAudioFlinger.h b/include/media/IAudioFlinger.h
+index e8fb6d3..c3519f2 100644
+--- a/include/media/IAudioFlinger.h
++++ b/include/media/IAudioFlinger.h
+@@ -233,10 +233,6 @@ public:
+     // and should be called at most once.  For a definition of what "low RAM" means, see
+     // android.app.ActivityManager.isLowRamDevice().
+     virtual status_t setLowRamDevice(bool isLowRamDevice) = 0;
+-#ifdef MTK_HARDWARE
+-    virtual status_t SetAudioData(int par1,size_t len,void *ptr)=0;
+-    virtual status_t GetAudioData(int par1,size_t len,void *ptr)=0;
+-#endif
+ };
+ 
+ 
+diff --git a/include/media/IOMX.h b/include/media/IOMX.h
+index 0aefd73..6643736 100644
+--- a/include/media/IOMX.h
++++ b/include/media/IOMX.h
+@@ -27,10 +27,6 @@
+ #include <OMX_Core.h>
+ #include <OMX_Video.h>
+ 
+-#ifdef MTK_HARDWARE
+-#include <binder/IMemory.h>
+-#endif
+-
+ namespace android {
+ 
+ class IMemory;
+@@ -154,26 +150,6 @@ public:
+             InternalOptionType type,
+             const void *data,
+             size_t size) = 0;
+-#ifdef MTK_HARDWARE
+-    virtual status_t useBuffer(
+-            node_id node, OMX_U32 port_index, unsigned char* virAddr, size_t size,
+-            buffer_id *buffer) = 0;
+-
+-    virtual status_t useBuffer(
+-            node_id node, OMX_U32 port_index, unsigned char* virAddr, size_t size, OMX_U32 offset,
+-            buffer_id *buffer) = 0;
+-
+-    virtual status_t registerBuffer(
+-            node_id node, OMX_U32 port_index, const sp<IMemoryHeap> &heap) = 0;
+-
+-    virtual status_t registerBuffer2(
+-            node_id node, OMX_U32 port_index, const sp<IMemoryHeap> &HeapBase) = 0;
+-
+-    virtual status_t useIonBuffer(
+-            node_id node, OMX_U32 port_index,
+-            unsigned char* virAddr, OMX_S32 fd, size_t size, buffer_id *buffer) = 0;
+-#endif
+-
+ };
+ 
+ struct omx_message {
+diff --git a/include/media/MediaPlayerInterface.h b/include/media/MediaPlayerInterface.h
+index f7b6ae7..c03f642 100644
+--- a/include/media/MediaPlayerInterface.h
++++ b/include/media/MediaPlayerInterface.h
+@@ -53,9 +53,6 @@ enum player_type {
+     // argument to the 'test:' url in the setDataSource call.
+     TEST_PLAYER = 5,
+     DASH_PLAYER = 6,
+-#ifdef MTK_HARDWARE
+-    FM_AUDIO_PLAYER = 7
+-#endif
+ };
+ 
+ 
+diff --git a/include/media/stagefright/CameraSource.h b/include/media/stagefright/CameraSource.h
+index ec02722..013d2b4 100644
+--- a/include/media/stagefright/CameraSource.h
++++ b/include/media/stagefright/CameraSource.h
+@@ -32,9 +32,6 @@ namespace android {
+ class IMemory;
+ class Camera;
+ class Surface;
+-#ifdef MTK_HARDWARE
+-struct CameraSourceHandler;
+-#endif
+ 
+ class CameraSource : public MediaSource, public MediaBufferObserver {
+ public:
+@@ -242,9 +239,6 @@ private:
+     void stopCameraRecording();
+     void releaseCamera();
+     status_t reset();
+-#ifdef MTK_HARDWARE
+-    CameraSourceHandler *mMtkCameraSourceHandler;
+-#endif
+ 
+     CameraSource(const CameraSource &);
+     CameraSource &operator=(const CameraSource &);
+diff --git a/include/media/stagefright/ColorConverter.h b/include/media/stagefright/ColorConverter.h
+index f286708..85ba920 100644
+--- a/include/media/stagefright/ColorConverter.h
++++ b/include/media/stagefright/ColorConverter.h
+@@ -27,15 +27,7 @@
+ 
+ namespace android {
+ 
+-#ifdef MTK_HARDWARE
+-struct MtkColorConverter;
+-#endif
+-
+ struct ColorConverter {
+-#ifdef MTK_HARDWARE
+-    // Needs access to BitmapParams.
+-    friend struct MtkColorConverter;
+-#endif
+     ColorConverter(OMX_COLOR_FORMATTYPE from, OMX_COLOR_FORMATTYPE to);
+     ~ColorConverter();
+ 
+@@ -70,10 +62,6 @@ private:
+     OMX_COLOR_FORMATTYPE mSrcFormat, mDstFormat;
+     uint8_t *mClip;
+ 
+-#ifdef MTK_HARDWARE
+-    MtkColorConverter *mMtkColorConverter;
+-#endif
+-
+     uint8_t *initClip();
+ 
+     status_t convertCbYCrY(
+diff --git a/include/media/stagefright/OMXCodec.h b/include/media/stagefright/OMXCodec.h
+index 5dd99eb..9b7a656 100644
+--- a/include/media/stagefright/OMXCodec.h
++++ b/include/media/stagefright/OMXCodec.h
+@@ -37,10 +37,6 @@ struct OMXCodecObserver;
+ struct CodecProfileLevel;
+ class SkipCutBuffer;
+ 
+-#ifdef MTK_HARDWARE
+-struct OMXCodecBufferAllocator;
+-#endif
+-
+ struct OMXCodec : public MediaSource,
+                   public MediaBufferObserver {
+     enum CreationFlags {
+@@ -107,9 +103,6 @@ struct OMXCodec : public MediaSource,
+         kSupportsMultipleFramesPerInputBuffer = 1024,
+         kRequiresLargerEncoderOutputBuffer    = 2048,
+         kOutputBuffersAreUnreadable           = 4096,
+-#ifdef MTK_HARDWARE
+-        kAvoidMemcopyInputRecordingFrames     = 8192,
+-#endif
+ #if defined(OMAP_ENHANCEMENT)
+         kAvoidMemcopyInputRecordingFrames     = 0x20000000,
+ #endif
+@@ -144,10 +137,6 @@ private:
+     // Make sure mLock is accessible to OMXCodecObserver
+     friend class OMXCodecObserver;
+ 
+-#ifdef MTK_HARDWARE
+-    friend struct OMXCodecBufferAllocator;
+-#endif
+-
+     // Call this with mLock hold
+     void on_message(const omx_message &msg);
+ 
+@@ -241,6 +230,7 @@ private:
+     Condition mAsyncCompletion;
+ 
+     bool mPaused;
++
+     sp<ANativeWindow> mNativeWindow;
+ 
+     // The index in each of the mPortBuffers arrays of the buffer that will be
+@@ -256,11 +246,6 @@ private:
+     // a video encoder.
+     List<int64_t> mDecodingTimeList;
+ 
+-#ifdef MTK_HARDWARE
+-    OMXCodecBufferAllocator *mMtkBufferAllocator;
+-#endif
+-
+-
+     OMXCodec(const sp<IOMX> &omx, IOMX::node_id node,
+              uint32_t quirks, uint32_t flags,
+              bool isEncoder, const char *mime, const char *componentName,
+@@ -395,7 +380,7 @@ private:
+     void dumpPortStatus(OMX_U32 portIndex);
+ 
+     status_t configureCodec(const sp<MetaData> &meta);
+-#if defined(OMAP_ENHANCEMENT) || defined(MTK_HARDWARE)
++#if defined(OMAP_ENHANCEMENT)
+     void restorePatchedDataPointer(BufferInfo *info);
+ #endif
+ 
+@@ -470,6 +455,7 @@ status_t QueryCodec(
+         CodecCapabilities *caps);
+ 
+ status_t getOMXChannelMapping(size_t numChannels, OMX_AUDIO_CHANNELTYPE map[]);
++
+ }  // namespace android
+ 
+ #endif  // OMX_CODEC_H_
+diff --git a/media/libmedia/AudioSystem.cpp b/media/libmedia/AudioSystem.cpp
+index 2e58f26..b0688e7 100644
+--- a/media/libmedia/AudioSystem.cpp
++++ b/media/libmedia/AudioSystem.cpp
+@@ -827,29 +827,6 @@ bool AudioSystem::isOffloadSupported(const audio_offload_info_t& info)
+     return aps->isOffloadSupported(info);
+ }
+ 
+-#ifdef MTK_HARDWARE
+-status_t AudioSystem::SetAudioData(int par1,size_t byte_len,void *ptr) {
+-     ALOGD("SetAudioData");
+-     const sp<IAudioFlinger>& af = AudioSystem::get_audio_flinger();
+-     if (af == 0)
+-     {
+-         ALOGE("AudioSystem::SetAAudioData Error!! PERMISSION_DENIED");
+-         return PERMISSION_DENIED;
+-     }
+-     return af->SetAudioData(par1,byte_len,ptr);
+-}
+-
+-status_t AudioSystem::GetAudioData(int par1,size_t byte_len,void *ptr) {
+-     ALOGD("GetAudioData");
+-     const sp<IAudioFlinger>& af = AudioSystem::get_audio_flinger();
+-     if (af == 0) {
+-         ALOGE("AudioSystem::GetAAudioData Error!! PERMISSION_DENIED");
+-         return PERMISSION_DENIED;
+-     }
+-     return af->GetAudioData(par1,byte_len,ptr);
+-}
+-#endif
+-
+ // ---------------------------------------------------------------------------
+ 
+ void AudioSystem::AudioPolicyServiceClient::binderDied(const wp<IBinder>& who) {
+diff --git a/media/libmedia/IAudioFlinger.cpp b/media/libmedia/IAudioFlinger.cpp
+index 8a30a53..92471d6 100644
+--- a/media/libmedia/IAudioFlinger.cpp
++++ b/media/libmedia/IAudioFlinger.cpp
+@@ -78,10 +78,6 @@ enum {
+ #ifdef QCOM_DIRECTTRACK
+     CREATE_DIRECT_TRACK,
+ #endif
+-#ifdef MTK_HARDWARE
+-	SET_AUDIO_DATA,
+-	GET_AUDIO_DATA,
+-#endif
+ };
+ 
+ class BpAudioFlinger : public BpInterface<IAudioFlinger>
+@@ -789,31 +785,6 @@ public:
+         return reply.readInt32();
+     }
+ 
+-#ifdef MTK_HARDWARE
+-    virtual status_t SetAudioData(int par1, size_t len,void *ptr)
+-    {
+-        Parcel data, reply;
+-        data.writeInterfaceToken(IAudioFlinger::getInterfaceDescriptor());
+-        data.writeInt32(par1);
+-        data.writeInt32(len);
+-        data.write(ptr,len);
+-        remote()->transact(SET_AUDIO_DATA, data, &reply);
+-        reply.read(ptr, len);
+-        return OK;
+-    }
+-    virtual status_t GetAudioData(int par1, size_t len,void *ptr)
+-    {
+-        Parcel data, reply;
+-        data.writeInterfaceToken(IAudioFlinger::getInterfaceDescriptor());
+-        data.writeInt32(par1);
+-        data.writeInt32(len);
+-        data.write(ptr,len);
+-        remote()->transact(GET_AUDIO_DATA, data, &reply);
+-        reply.read(ptr, len);
+-        return OK;
+-    }
+-#endif
+-
+ };
+ 
+ IMPLEMENT_META_INTERFACE(AudioFlinger, "android.media.IAudioFlinger");
+@@ -1224,32 +1195,6 @@ status_t BnAudioFlinger::onTransact(
+             reply->writeInt32(setLowRamDevice(isLowRamDevice));
+             return NO_ERROR;
+         } break;
+-#ifdef MTK_HARDWARE
+-        case SET_AUDIO_DATA:
+-        {
+-            CHECK_INTERFACE(IAudioFlinger, data, reply);
+-            size_t command = data.readInt32();
+-            size_t buf_size = data.readInt32();
+-            void *params = malloc(buf_size);
+-            data.read(params, buf_size);
+-            status_t err = SetAudioData(command,buf_size,params);
+-            reply->write(params,buf_size);
+-            free(params);
+-            return NO_ERROR;
+-        }break;
+-        case GET_AUDIO_DATA:
+-        {
+-            CHECK_INTERFACE(IAudioFlinger, data, reply);
+-            size_t command = data.readInt32();
+-            size_t buf_size = data.readInt32();
+-            void *params = malloc(buf_size);
+-            data.read(params, buf_size);
+-            status_t err = GetAudioData(command,buf_size,params);
+-            reply->write(params,buf_size);
+-            free(params);
+-            return NO_ERROR;
+-        }break;
+-#endif
+         default:
+             return BBinder::onTransact(code, data, reply, flags);
+     }
+diff --git a/media/libmedia/IOMX.cpp b/media/libmedia/IOMX.cpp
+index 7fd5b07..71ce320 100644
+--- a/media/libmedia/IOMX.cpp
++++ b/media/libmedia/IOMX.cpp
+@@ -54,13 +54,6 @@ enum {
+     GET_GRAPHIC_BUFFER_USAGE,
+     SET_INTERNAL_OPTION,
+     UPDATE_GRAPHIC_BUFFER_IN_META,
+-#ifdef MTK_HARDWARE
+-    USE_BUFFER2,
+-    USE_BUFFER3,
+-    REGISTER_BUFFER,
+-    REGISTER_BUFFER2,
+-    USE_ION_BUFFER,
+-#endif
+ };
+ 
+ class BpOMX : public BpInterface<IOMX> {
+@@ -359,105 +352,6 @@ public:
+         return err;
+     }
+ 
+-#ifdef MTK_HARDWARE
+-    virtual status_t useBuffer(
+-            node_id node, OMX_U32 port_index, unsigned char* virAddr, size_t size,
+-            buffer_id *buffer) {
+-
+-        Parcel data, reply;
+-        data.writeInterfaceToken(IOMX::getInterfaceDescriptor());
+-        data.writeIntPtr((intptr_t)node);
+-        data.writeInt32(port_index);
+-        data.writeInt32((OMX_U32)virAddr);
+-        data.writeInt32(size);
+-        remote()->transact(USE_BUFFER2, data, &reply);
+-
+-        status_t err = reply.readInt32();
+-        if (err != OK) {
+-            *buffer = 0;
+-
+-            return err;
+-        }
+-
+-        *buffer = (void*)reply.readIntPtr();
+-
+-        return err;
+-    }
+-
+-    virtual status_t useBuffer(
+-            node_id node, OMX_U32 port_index, unsigned char* virAddr, size_t size, OMX_U32 offset,
+-            buffer_id *buffer) {
+-
+-        Parcel data, reply;
+-        data.writeInterfaceToken(IOMX::getInterfaceDescriptor());
+-        data.writeIntPtr((intptr_t)node);
+-        data.writeInt32(port_index);
+-        data.writeInt32((OMX_U32)virAddr);
+-        data.writeInt32(size);
+-        data.writeInt32(offset);
+-        remote()->transact(USE_BUFFER3, data, &reply);
+-
+-        status_t err = reply.readInt32();
+-        if (err != OK) {
+-            *buffer = 0;
+-
+-            return err;
+-        }
+-
+-        *buffer = (void*)reply.readIntPtr();
+-
+-        return err;
+-    }
+-
+-    virtual status_t registerBuffer(
+-            node_id node, OMX_U32 port_index, const sp<IMemoryHeap> &heap) {
+-        Parcel data, reply;
+-        data.writeInterfaceToken(IOMX::getInterfaceDescriptor());
+-        data.writeIntPtr((intptr_t)node);
+-        data.writeInt32(port_index);
+-        data.writeStrongBinder(heap->asBinder());
+-        remote()->transact(REGISTER_BUFFER, data, &reply);
+-
+-        return reply.readInt32();
+-    }
+-
+-    virtual status_t registerBuffer2(
+-            node_id node, OMX_U32 port_index, const sp<IMemoryHeap> &HeapBase) {
+-        Parcel data, reply;
+-        data.writeInterfaceToken(IOMX::getInterfaceDescriptor());
+-        data.writeIntPtr((intptr_t)node);
+-        data.writeInt32(port_index);
+-        data.writeStrongBinder(HeapBase->asBinder());
+-        remote()->transact(REGISTER_BUFFER2, data, &reply);
+-
+-        return reply.readInt32();
+-    }
+-    virtual status_t useIonBuffer(
+-            node_id node, OMX_U32 port_index,
+-            unsigned char* virAddr, OMX_S32 fd, size_t size, buffer_id *buffer) {
+-        Parcel data, reply;
+-        data.writeInterfaceToken(IOMX::getInterfaceDescriptor());
+-        data.writeIntPtr((intptr_t)node);
+-        data.writeInt32(port_index);
+-        data.writeInt32((OMX_U32)virAddr);
+-        data.writeFileDescriptor((OMX_S32)fd);
+-        data.writeInt32(size);
+-        ALOGV("useIonBuffer writeFileDescriptor %x, %x, %x, %x, %x", node, port_index, virAddr, fd, size);
+-        remote()->transact(USE_ION_BUFFER, data, &reply);
+-
+-        status_t err = reply.readInt32();
+-        if (err != OK) {
+-            *buffer = 0;
+-
+-            return err;
+-        }
+-
+-        *buffer = (void*)reply.readIntPtr();
+-
+-        return err;
+-    }
+-#endif
+-
+     virtual status_t prepareForAdaptivePlayback(
+             node_id node, OMX_U32 port_index, OMX_BOOL enable,
+             OMX_U32 max_width, OMX_U32 max_height) {
+@@ -893,96 +787,6 @@ status_t BnOMX::onTransact(
+             return NO_ERROR;
+         }
+ 
+-#ifdef MTK_HARDWARE
+-        case USE_BUFFER2:
+-        {
+-            CHECK_OMX_INTERFACE(IOMX, data, reply);
+-
+-            node_id node = (void*)data.readIntPtr();
+-            OMX_U32 port_index = data.readInt32();
+-            unsigned char* virAddr = (unsigned char*)data.readInt32();
+-            size_t size = data.readInt32();
+-            buffer_id buffer;
+-            status_t err = useBuffer(node, port_index, virAddr, size, &buffer);
+-            reply->writeInt32(err);
+-
+-            if (err == OK) {
+-                reply->writeIntPtr((intptr_t)buffer);
+-            }
+-
+-            return NO_ERROR;
+-        }
+-
+-        case USE_BUFFER3:
+-        {
+-            CHECK_OMX_INTERFACE(IOMX, data, reply);
+-
+-            node_id node = (void*)data.readIntPtr();
+-            OMX_U32 port_index = data.readInt32();
+-            unsigned char* virAddr = (unsigned char*)data.readInt32();
+-            size_t size = data.readInt32();
+-            OMX_U32 offset = data.readInt32();
+-            buffer_id buffer;
+-            status_t err = useBuffer(node, port_index, virAddr, size, offset, &buffer);
+-            reply->writeInt32(err);
+-
+-            if (err == OK) {
+-                reply->writeIntPtr((intptr_t)buffer);
+-            }
+-
+-            return NO_ERROR;
+-        }
+-
+-        case REGISTER_BUFFER:
+-        {
+-            CHECK_OMX_INTERFACE(IOMX, data, reply);
+-
+-            node_id node = (void*)data.readIntPtr();
+-            OMX_U32 port_index = data.readInt32();
+-            sp<IMemoryHeap> heap =
+-                interface_cast<IMemoryHeap>(data.readStrongBinder());
+-
+-            status_t err = registerBuffer(node, port_index, heap);
+-            reply->writeInt32(err);
+-
+-            return NO_ERROR;
+-        }
+-
+-    case REGISTER_BUFFER2:
+-        {
+-            CHECK_OMX_INTERFACE(IOMX, data, reply);
+-
+-            node_id node = (void*)data.readIntPtr();
+-            OMX_U32 port_index = data.readInt32();
+-            sp<IMemoryHeap> HeapBase =
+-                interface_cast<IMemoryHeap>(data.readStrongBinder());
+-
+-            status_t err = registerBuffer2(node, port_index, HeapBase);
+-            reply->writeInt32(err);
+-
+-            return NO_ERROR;
+-        }
+-        case USE_ION_BUFFER:
+-        {
+-            CHECK_OMX_INTERFACE(IOMX, data, reply);
+-            node_id node = (void*)data.readIntPtr();
+-            OMX_U32 port_index = data.readInt32();
+-            unsigned char* virAddr = (unsigned char*)data.readInt32();
+-            OMX_S32 fd = dup(data.readFileDescriptor());
+-            size_t size = data.readInt32();
+-            ALOGV("useIonBuffer readFileDescriptor %x, %x, %x, %x, %x", node, port_index, virAddr, fd, size);
+-            buffer_id buffer;
+-            status_t err = useIonBuffer(
+-                    node, port_index, virAddr, fd, size, &buffer);
+-            reply->writeInt32(err);
+-
+-            if (err == OK) {
+-                reply->writeIntPtr((intptr_t)buffer);
+-            }
+-
+-            return NO_ERROR;
+-        }
+-#endif
+         case PREPARE_FOR_ADAPTIVE_PLAYBACK:
+         {
+             CHECK_OMX_INTERFACE(IOMX, data, reply);
+diff --git a/media/libmediaplayerservice/Android.mk b/media/libmediaplayerservice/Android.mk
+index 79c18ef..5e02313 100644
+--- a/media/libmediaplayerservice/Android.mk
++++ b/media/libmediaplayerservice/Android.mk
+@@ -58,13 +58,6 @@ ifeq ($(BOARD_USES_QCOM_HARDWARE),true)
+         $(call project-path-for,qcom-media)/mm-core/inc
+ endif
+ 
+-ifeq ($(BOARD_HAS_MTK_HARDWARE),true)
+-    LOCAL_C_INCLUDES += \
+-        $(TOP)/hardware/mediatek/media/include
+-    LOCAL_STATIC_LIBRARIES += \
+-        libstagefright_bufferallocator
+-endif
+-
+ LOCAL_MODULE:= libmediaplayerservice
+ 
+ ifeq ($(TARGET_ENABLE_QC_AV_ENHANCEMENTS),true)
+diff --git a/media/libmediaplayerservice/MediaPlayerFactory.cpp b/media/libmediaplayerservice/MediaPlayerFactory.cpp
+index 531647d..29e1edd 100644
+--- a/media/libmediaplayerservice/MediaPlayerFactory.cpp
++++ b/media/libmediaplayerservice/MediaPlayerFactory.cpp
+@@ -366,23 +366,6 @@ void MediaPlayerFactory::registerBuiltinFactories() {
+         }
+       }
+     }
+-
+-#ifdef MTK_HARDWARE
+-     void *fmPlayerLib = ::dlopen("libfmplayer.so", RTLD_LAZY);
+-     if (fmPlayerLib == NULL) {
+-         ALOGE("MTK FM Player lib not found, FM radio will not work");
+-     } else {
+-         typedef MediaPlayerFactory::IFactory* (*CreateFMPlayer)();
+-         CreateFMPlayer createFMPlayerFunc = (CreateFMPlayer) ::dlsym(fmPlayerLib, "CreateFMPlayer");
+-         if (createFMPlayerFunc == NULL) {
+-             ALOGE("Factory method not found within the FM Player library");
+-         } else {
+-             ALOGI("Registering FM Player factory");
+-             registerFactory_l(createFMPlayerFunc(), FM_AUDIO_PLAYER);
+-         }
+-     }
+-#endif
+-
+     sInitComplete = true;
+ }
+ 
+diff --git a/media/libmediaplayerservice/StagefrightRecorder.cpp b/media/libmediaplayerservice/StagefrightRecorder.cpp
+index 8c4f34e..d3dbcbe 100644
+--- a/media/libmediaplayerservice/StagefrightRecorder.cpp
++++ b/media/libmediaplayerservice/StagefrightRecorder.cpp
+@@ -67,10 +67,6 @@
+ #endif
+ #endif
+ 
+-#ifdef MTK_HARDWARE
+-#include <bufferallocator/StagefrightRecorderMemoryHandler.h>
+-#endif
+-
+ #include "ARTPWriter.h"
+ #include <cutils/properties.h>
+ #include "ExtendedUtils.h"
+@@ -100,19 +96,13 @@ StagefrightRecorder::StagefrightRecorder()
+       mStarted(false),
+       mSurfaceMediaSource(NULL),
+       mRecPaused(false) {
++
+     ALOGV("Constructor");
+-#ifdef MTK_HARDWARE
+-    mMtkMemoryHandler = new StagefrightRecorderMemoryHandler();
+-#endif
+     reset();
+ }
+ 
+ StagefrightRecorder::~StagefrightRecorder() {
+     ALOGV("Destructor");
+-#ifdef MTK_HARDWARE
+-    delete mMtkMemoryHandler;
+-    mMtkMemoryHandler = NULL;
+-#endif
+     stop();
+ }
+ 
+@@ -236,11 +226,7 @@ status_t StagefrightRecorder::setVideoEncoder(video_encoder ve) {
+     }
+ 
+     if (ve == VIDEO_ENCODER_DEFAULT) {
+-#ifdef MTK_HARDWARE //In order to pass CTS test case for preview size: 320 x 240
+-        mVideoEncoder = VIDEO_ENCODER_MPEG_4_SP;
+-#else
+         mVideoEncoder = VIDEO_ENCODER_H263;
+-#endif
+     } else {
+         mVideoEncoder = ve;
+     }
+@@ -1643,18 +1629,8 @@ status_t StagefrightRecorder::setupVideoEncoder(
+     CHECK(meta->findInt32(kKeySliceHeight, &sliceHeight));
+     CHECK(meta->findInt32(kKeyColorFormat, &colorFormat));
+ 
+-#ifdef MTK_HARDWARE
+-    mMtkMemoryHandler->setupVideoEncoder(&enc_meta, &meta);
+-#endif
+-
+-#ifdef MTK_HARDWARE
+-    //tell codec the real width and height ap want to record
+-    enc_meta->setInt32(kKeyWidth, mVideoWidth);
+-    enc_meta->setInt32(kKeyHeight, mVideoHeight);
+-#else
+     enc_meta->setInt32(kKeyWidth, width);
+     enc_meta->setInt32(kKeyHeight, height);
+-#endif
+     enc_meta->setInt32(kKeyIFramesInterval, mIFramesIntervalSec);
+     enc_meta->setInt32(kKeyStride, stride);
+     enc_meta->setInt32(kKeySliceHeight, sliceHeight);
+@@ -1964,11 +1940,7 @@ status_t StagefrightRecorder::reset() {
+     // Default parameters
+     mOutputFormat  = OUTPUT_FORMAT_THREE_GPP;
+     mAudioEncoder  = AUDIO_ENCODER_AMR_NB;
+-#ifdef MTK_HARDWARE    //In order to pass CTS test case for preview size: 320 x 240
+-    mVideoEncoder  = VIDEO_ENCODER_MPEG_4_SP;
+-#else
+     mVideoEncoder  = VIDEO_ENCODER_H263;
+-#endif
+     mVideoWidth    = 176;
+     mVideoHeight   = 144;
+     mFrameRate     = -1;
+@@ -2192,4 +2164,5 @@ status_t StagefrightRecorder::setSourcePause(bool pause) {
+     }
+     return err;
+ }
++
+ }  // namespace android
+diff --git a/media/libmediaplayerservice/StagefrightRecorder.h b/media/libmediaplayerservice/StagefrightRecorder.h
+index 7be228c..d0c0ae0 100644
+--- a/media/libmediaplayerservice/StagefrightRecorder.h
++++ b/media/libmediaplayerservice/StagefrightRecorder.h
+@@ -39,10 +39,6 @@ class MediaProfiles;
+ class IGraphicBufferProducer;
+ class SurfaceMediaSource;
+ 
+-#ifdef MTK_HARDWARE
+-struct StagefrightRecorderMemoryHandler;
+-#endif
+-
+ struct StagefrightRecorder : public MediaRecorderBase {
+     StagefrightRecorder();
+     virtual ~StagefrightRecorder();
+@@ -134,9 +130,6 @@ private:
+     // will be sent to the client side using which the
+     // frame buffers will be queued and dequeued
+     sp<SurfaceMediaSource> mSurfaceMediaSource;
+-#ifdef MTK_HARDWARE
+-    StagefrightRecorderMemoryHandler *mMtkMemoryHandler;
+-#endif
+ 
+     status_t setupMPEG4Recording(
+         int outputFd,
+diff --git a/media/libmediaplayerservice/nuplayer/NuPlayer.cpp b/media/libmediaplayerservice/nuplayer/NuPlayer.cpp
+index 19fb0ad..51a2d9f 100644
+--- a/media/libmediaplayerservice/nuplayer/NuPlayer.cpp
++++ b/media/libmediaplayerservice/nuplayer/NuPlayer.cpp
+@@ -1128,12 +1128,6 @@ void NuPlayer::renderBuffer(bool audio, const sp<AMessage> &msg) {
+         skipUntilMediaTimeUs = -1;
+     }
+ 
+-#ifdef MTK_HARDWARE
+-    int32_t flags;
+-    CHECK(msg->findInt32("flags", &flags));
+-    buffer->meta()->setInt32("flags", flags);
+-#endif
+-
+     mRenderer->queueBuffer(audio, buffer, reply);
+ }
+ 
+diff --git a/media/libstagefright/ACodec.cpp b/media/libstagefright/ACodec.cpp
+index 49ad086..3ff1a63 100755
+--- a/media/libstagefright/ACodec.cpp
++++ b/media/libstagefright/ACodec.cpp
+@@ -53,13 +53,6 @@
+ #include "include/ExtendedUtils.h"
+ #endif
+ 
+-#ifdef MTK_HARDWARE
+-#define ENABLE_MTK_BUF_ADDR_ALIGNMENT
+-#define MTK_BUF_ADDR_ALIGNMENT_VALUE 512
+-
+-#define ROUND_16(X)     ((X + 0xF) & (~0xF))
+-#endif
+-
+ namespace android {
+ 
+ template<class T>
+@@ -509,18 +502,12 @@ status_t ACodec::allocateBuffersOnPort(OMX_U32 portIndex) {
+                 mNode, OMX_IndexParamPortDefinition, &def, sizeof(def));
+ 
+         if (err == OK) {
+-#if defined(MTK_HARDWARE) && defined(ENABLE_MTK_BUF_ADDR_ALIGNMENT)
+-            def.nBufferSize = ((def.nBufferSize + MTK_BUF_ADDR_ALIGNMENT_VALUE-1) & ~(MTK_BUF_ADDR_ALIGNMENT_VALUE-1));
+-#endif
+             ALOGV("[%s] Allocating %lu buffers of size %lu on %s port",
+                     mComponentName.c_str(),
+                     def.nBufferCountActual, def.nBufferSize,
+                     portIndex == kPortIndexInput ? "input" : "output");
+ 
+             size_t totalSize = def.nBufferCountActual * def.nBufferSize;
+-#if defined(MTK_HARDWARE) && defined(ENABLE_MTK_BUF_ADDR_ALIGNMENT)
+-            totalSize = def.nBufferCountActual * (((def.nBufferSize + MTK_BUF_ADDR_ALIGNMENT_VALUE-1) & ~(MTK_BUF_ADDR_ALIGNMENT_VALUE-1)) + MTK_BUF_ADDR_ALIGNMENT_VALUE);
+-#endif
+             mDealer[portIndex] = new MemoryDealer(totalSize, "ACodec");
+ 
+             for (OMX_U32 i = 0; i < def.nBufferCountActual; ++i) {
+@@ -556,14 +543,7 @@ status_t ACodec::allocateBuffersOnPort(OMX_U32 portIndex) {
+                 }
+ 
+                 if (mem != NULL) {
+-#if defined(MTK_HARDWARE) && defined(ENABLE_MTK_BUF_ADDR_ALIGNMENT)
+-                    OMX_U8 *ptr = static_cast<OMX_U8 *>(mem->pointer());
+-                    OMX_U32 pBuffer = ((reinterpret_cast<OMX_U32>(ptr)+(MTK_BUF_ADDR_ALIGNMENT_VALUE-1))&~(MTK_BUF_ADDR_ALIGNMENT_VALUE-1));
+-                    info.mData = new ABuffer((void*)pBuffer, def.nBufferSize);
+-                    ALOGD("@debug: Buffer[%d], %p(%p)", i, info.mData->data(), ptr);
+-#else
+                     info.mData = new ABuffer(mem->pointer(), def.nBufferSize);
+-#endif
+                 }
+ 
+                 mBuffers[portIndex].push(info);
+@@ -617,39 +597,6 @@ status_t ACodec::configureOutputBuffersFromNativeWindow(
+     def.format.video.nFrameWidth,
+     def.format.video.nFrameHeight,
+     eNativeColorFormat);
+-#elif defined(MTK_HARDWARE)
+-    uint32_t eHalWidth       = def.format.video.nFrameWidth;
+-    uint32_t eHalHeight      = def.format.video.nFrameHeight;
+-    uint32_t eHalColorFormat = def.format.video.eColorFormat;
+-    if (!strncmp("OMX.MTK.", mComponentName.c_str(), 8)) {
+-        // FIXME: we are always passing the clearmotion variants
+-        // should we go with other formats?
+-        eHalWidth = def.format.video.nStride;
+-        eHalHeight = def.format.video.nSliceHeight;
+-#ifdef MTK_OMX_USES_PRIVATE_YUV
+-       eHalColorFormat = HAL_PIXEL_FORMAT_YUV_PRIVATE;
+-#else
+-       switch (def.format.video.eColorFormat) {
+-           case OMX_COLOR_FormatYUV420Planar:
+-               eHalColorFormat = HAL_PIXEL_FORMAT_I420;
+-               break;
+-           case OMX_COLOR_FormatVendorMTKYUV:
+-               eHalColorFormat = HAL_PIXEL_FORMAT_NV12_BLK;
+-               break;
+-           case OMX_MTK_COLOR_FormatYV12:
+-               eHalColorFormat = HAL_PIXEL_FORMAT_YV12;
+-               break;
+-           default:
+-               eHalColorFormat = HAL_PIXEL_FORMAT_I420;
+-               break;
+-       }
+-#endif
+-    }
+-    err = native_window_set_buffers_geometry(
+-            mNativeWindow.get(),
+-            eHalWidth,
+-            eHalHeight,
+-            eHalColorFormat);
+ #else
+     err = native_window_set_buffers_geometry(
+             mNativeWindow.get(),
+@@ -677,28 +624,6 @@ status_t ACodec::configureOutputBuffersFromNativeWindow(
+         usage |= GRALLOC_USAGE_PROTECTED;
+     }
+ 
+-#if 0  // TODO: defer fix DRM
+-#ifndef ANDROID_DEFAULT_CODE
+-
+-    if (mFlags & kFlagIsProtect) {
+-        usage |= GRALLOC_USAGE_PROTECTED;
+-        ALOGD("mFlags & kFlagIsProtect: %d, usage %x", kFlagIsProtect, usage);
+-    }
+-
+-#ifdef MTK_SEC_VIDEO_PATH_SUPPORT
+-    /* 
+-        use secure buffer for secure video path
+-        Note:
+-            1. GTS1.3 and WVL3 case, kFlagIsSecure will not use.
+-    */
+-	if (mFlags & kFlagIsSecure) {
+-		usage |=  GRALLOC_USAGE_SECURE;
+-        ALOGW("ACODEC: use GRALLOC_USAGE_SECURE\n");				
+-	}
+-#endif	
+-#endif
+-#endif
+-
+     // Make sure to check whether either Stagefright or the video decoder
+     // requested protected buffers.
+     if (usage & GRALLOC_USAGE_PROTECTED) {
+@@ -738,7 +663,7 @@ status_t ACodec::configureOutputBuffersFromNativeWindow(
+         return err;
+     }
+ 
+-#if defined(QCOM_HARDWARE) || defined(MTK_HARDWARE)
++#ifdef QCOM_HARDWARE
+     //add an extra buffer to display queue to get around dequeue+wait
+     //blocking too long (more than 1 Vsync) in case BufferQeuue is in
+     //sync-mode and advertizes only 1 buffer
+@@ -2026,35 +1951,16 @@ status_t ACodec::setupVideoEncoder(const char *mime, const sp<AMessage> &msg) {
+         stride = width;
+     }
+ 
+-#ifdef MTK_HARDWARE
+-    video_def->nStride = ROUND_16(stride);
+-#else
+     video_def->nStride = stride;
+-#endif
+ 
+     int32_t sliceHeight;
+     if (!msg->findInt32("slice-height", &sliceHeight)) {
+         sliceHeight = height;
+     }
+ 
+-#ifdef MTK_HARDWARE
+-    video_def->nSliceHeight = ROUND_16(sliceHeight);
+-#else
+     video_def->nSliceHeight = sliceHeight;
+-#endif
+ 
+-#ifdef MTK_HARDWARE
+-    if( colorFormat == OMX_COLOR_Format16bitRGB565 )
+-        def.nBufferSize = (video_def->nStride * video_def->nSliceHeight * 2);
+-    else if( colorFormat == OMX_COLOR_Format24bitRGB888 )
+-        def.nBufferSize = (video_def->nStride * video_def->nSliceHeight * 3);
+-    else if( colorFormat == OMX_COLOR_Format32bitARGB8888 )
+-        def.nBufferSize = (video_def->nStride * video_def->nSliceHeight * 4);
+-    else
+-        def.nBufferSize = (video_def->nStride * video_def->nSliceHeight * 3) / 2;
+-#else
+     def.nBufferSize = (video_def->nStride * video_def->nSliceHeight * 3) / 2;
+-#endif
+ 
+     float frameRate;
+     if (!msg->findFloat("frame-rate", &frameRate)) {
+diff --git a/media/libstagefright/Android.mk b/media/libstagefright/Android.mk
+index af55235..5e0ed1d 100644
+--- a/media/libstagefright/Android.mk
++++ b/media/libstagefright/Android.mk
+@@ -188,23 +188,6 @@ ifeq ($(TARGET_ENABLE_OFFLOAD_ENHANCEMENTS),true)
+ endif
+ endif
+ 
+-ifeq ($(BOARD_HAS_MTK_HARDWARE),true)
+-    ifeq ($(BOARD_MTK_OMX_USES_PRIVATE_YUV),true)
+-        LOCAL_CFLAGS += -DMTK_OMX_USES_PRIVATE_YUV
+-    endif
+-
+-    LOCAL_C_INCLUDES += \
+-        $(TOP)/hardware/mediatek/media/include
+-
+-    LOCAL_SHARED_LIBRARIES +=  \
+-        libdpframework \
+-        libstagefright_memutil
+-
+-    LOCAL_STATIC_LIBRARIES += \
+-        libstagefright_bufferallocator \
+-        libstagefright_mtkcolorconverter
+-endif
+-
+ LOCAL_SRC_FILES += \
+         chromium_http_stub.cpp
+ LOCAL_CPPFLAGS += -DCHROMIUM_AVAILABLE=1
+diff --git a/media/libstagefright/AwesomePlayer.cpp b/media/libstagefright/AwesomePlayer.cpp
+index 744f4ce..1fc5e59 100644
+--- a/media/libstagefright/AwesomePlayer.cpp
++++ b/media/libstagefright/AwesomePlayer.cpp
+@@ -233,9 +233,6 @@ AwesomePlayer::AwesomePlayer()
+       mTextDriver(NULL),
+       mOffloadAudio(false),
+       mAudioTearDown(false),
+-#ifdef MTK_HARDWARE
+-      mAVSyncTimeUs(-1),
+-#endif
+       mReadRetry(false),
+       mIsFirstFrameAfterResume(false),
+       mCustomAVSync(false),
+@@ -2011,17 +2008,6 @@ void AwesomePlayer::setVideoSource(sp<MediaSource> source) {
+     mVideoTrack = source;
+ }
+ 
+-#ifdef MTK_HARDWARE
+-void AwesomePlayer::mtk_omx_get_current_time(int64_t* pReal_time) {
+-        if((mFlags & FIRST_FRAME) || mSeeking == SEEK) {
+-                *pReal_time = -1;
+-        } else {
+-                *pReal_time = mAVSyncTimeUs;
+-        }
+-
+-}
+-#endif
+-
+ status_t AwesomePlayer::initVideoDecoder(uint32_t flags) {
+     ATRACE_CALL();
+ 
+@@ -2446,9 +2432,6 @@ void AwesomePlayer::onVideoEvent() {
+         nowUs = estimateRealTimeUs(ts, systemTimeUs) - mTimeSourceDeltaUs;
+ 
+         latenessUs = nowUs - timeUs;
+-#ifdef MTK_HARDWARE
+-        mAVSyncTimeUs = nowUs;
+-#endif
+ 
+         if (latenessUs >= 0) {
+             ATRACE_INT("Video Lateness (ms)", latenessUs / 1E3);
+diff --git a/media/libstagefright/CameraSource.cpp b/media/libstagefright/CameraSource.cpp
+index 4978c08..295c0f5 100644
+--- a/media/libstagefright/CameraSource.cpp
++++ b/media/libstagefright/CameraSource.cpp
+@@ -38,10 +38,6 @@
+ #include <OMX_TI_IVCommon.h>
+ #endif
+ 
+-#ifdef MTK_HARDWARE
+-#include <bufferallocator/CameraSourceHandler.h>
+-#endif
+-
+ #include "include/ExtendedUtils.h"
+ 
+ namespace android {
+@@ -100,23 +96,10 @@ void CameraSourceListener::postDataTimestamp(
+ }
+ 
+ static int32_t getColorFormat(const char* colorFormat) {
+-#ifdef MTK_HARDWARE
+-    ALOGD("getColorFormat(%s)", colorFormat);
+-
+-    if (!strcmp(colorFormat, CameraParameters::PIXEL_FORMAT_YUV420P)) {
+-        // YV12
+-        return OMX_MTK_COLOR_FormatYV12;
+-    }
+-
+-    if (!strcmp(colorFormat, "yuv420i-yyuvyy-3plane" /*MtkCameraParameters::PIXEL_FORMAT_YUV420I)*/)) {
+-        // i420
+-        return OMX_COLOR_FormatYUV420Planar;
+-    }
+-#else
+     if (!strcmp(colorFormat, CameraParameters::PIXEL_FORMAT_YUV420P)) {
+        return OMX_COLOR_FormatYUV420Planar;
+     }
+-#endif
++
+     if (!strcmp(colorFormat, CameraParameters::PIXEL_FORMAT_YUV422SP)) {
+        return OMX_COLOR_FormatYUV422SemiPlanar;
+     }
+@@ -215,9 +198,6 @@ CameraSource::CameraSource(
+       mCollectStats(false) {
+     mVideoSize.width  = -1;
+     mVideoSize.height = -1;
+-#ifdef MTK_HARDWARE
+-    mMtkCameraSourceHandler = new CameraSourceHandler;
+-#endif
+ 
+     mInitCheck = init(camera, proxy, cameraId,
+                     clientName, clientUid,
+@@ -387,6 +367,7 @@ status_t CameraSource::configureCamera(
+                 frameRate, supportedFrameRates);
+             return BAD_VALUE;
+         }
++
+         // The frame rate is supported, set the camera to the requested value.
+         params->setPreviewFrameRate(frameRate);
+         isCameraParamChanged = true;
+@@ -609,9 +590,6 @@ status_t CameraSource::initWithCameraAccess(
+     ExtendedUtils::HFR::setHFRIfEnabled(params, mMeta);
+ #endif
+ 
+-#ifdef MTK_HARDWARE
+-    mMtkCameraSourceHandler->init(&mCamera, &mMeta);
+-#endif
+     return OK;
+ }
+ 
+@@ -624,10 +602,6 @@ CameraSource::~CameraSource() {
+         // Camera's lock is released in this case.
+         releaseCamera();
+     }
+-#ifdef MTK_HARDWARE
+-    delete mMtkCameraSourceHandler;
+-    mMtkCameraSourceHandler = NULL;
+-#endif
+ }
+ 
+ void CameraSource::startCameraRecording() {
+diff --git a/media/libstagefright/MediaCodecList.cpp b/media/libstagefright/MediaCodecList.cpp
+index 81f2202..c97a3a9 100644
+--- a/media/libstagefright/MediaCodecList.cpp
++++ b/media/libstagefright/MediaCodecList.cpp
+@@ -556,16 +556,6 @@ status_t MediaCodecList::getCodecCapabilities(
+     }
+ 
+     for (size_t i = 0; i < caps.mColorFormats.size(); ++i) {
+-#ifdef MTK_HARDWARE
+-        // Implicitly push YUV420Planar as a supported format if the codec supports an internal
+-        // format that is compatible. This behavior is tested by the CTS VideoEncoderDecoderTest
+-        if (!info.mIsEncoder &&
+-            (OMX_COLOR_FormatVendorMTKYUV == caps.mColorFormats.itemAt(i)) ||
+-            (OMX_MTK_COLOR_FormatYV12 == caps.mColorFormats.itemAt(i)) ||
+-            (OMX_COLOR_FormatVendorMTKYUV_FCM == caps.mColorFormats.itemAt(i))) {
+-            colorFormats->push(OMX_COLOR_FormatYUV420Planar);
+-        }
+-#endif
+         colorFormats->push(caps.mColorFormats.itemAt(i));
+     }
+ 
+diff --git a/media/libstagefright/OMXClient.cpp b/media/libstagefright/OMXClient.cpp
+index 532c523..fb87de0 100644
+--- a/media/libstagefright/OMXClient.cpp
++++ b/media/libstagefright/OMXClient.cpp
+@@ -1,4 +1,3 @@
+-
+ /*
+  * Copyright (C) 2009 The Android Open Source Project
+  *
+@@ -84,26 +83,6 @@ struct MuxOMX : public IOMX {
+             node_id node, OMX_U32 port_index, const sp<IMemory> &params,
+             buffer_id *buffer);
+ 
+-#ifdef MTK_HARDWARE
+-    virtual status_t useBuffer(
+-            node_id node, OMX_U32 port_index, unsigned char* virAddr, size_t size,
+-            buffer_id *buffer);
+-
+-    virtual status_t useBuffer(
+-            node_id node, OMX_U32 port_index, unsigned char* virAddr, size_t size, OMX_U32 offset,
+-            buffer_id *buffer);
+-
+-    virtual status_t registerBuffer(
+-            node_id node, OMX_U32 port_index, const sp<IMemoryHeap> &heap);
+-
+-    virtual status_t registerBuffer2(
+-        node_id node, OMX_U32 port_index,  const sp<IMemoryHeap> &HeapBase);
+-
+-    virtual status_t useIonBuffer(
+-            node_id node, OMX_U32 port_index,
+-            unsigned char* virAddr, OMX_S32 fd, size_t size, buffer_id *buffer);
+-#endif
+-
+     virtual status_t useGraphicBuffer(
+             node_id node, OMX_U32 port_index,
+             const sp<GraphicBuffer> &graphicBuffer, buffer_id *buffer);
+@@ -316,35 +295,6 @@ status_t MuxOMX::useBuffer(
+     return getOMX(node)->useBuffer(node, port_index, params, buffer);
+ }
+ 
+-#ifdef MTK_HARDWARE
+-status_t MuxOMX::useBuffer(
+-        node_id node, OMX_U32 port_index, unsigned char* virAddr, size_t size,
+-        buffer_id *buffer) {
+-    return getOMX(node)->useBuffer(node, port_index, virAddr, size, buffer);
+-}
+-
+-status_t MuxOMX::useBuffer(
+-        node_id node, OMX_U32 port_index, unsigned char* virAddr, size_t size, OMX_U32 offset,
+-        buffer_id *buffer) {
+-    return getOMX(node)->useBuffer(node, port_index, virAddr, size, offset, buffer);
+-}
+-
+-status_t MuxOMX::registerBuffer(
+-        node_id node, OMX_U32 port_index, const sp<IMemoryHeap> &heap) {
+-    return getOMX(node)->registerBuffer(node, port_index, heap);
+-}
+-
+-status_t MuxOMX::registerBuffer2(
+-        node_id node, OMX_U32 port_index,  const sp<IMemoryHeap> &HeapBase) {
+-    return getOMX(node)->registerBuffer2(node, port_index, HeapBase);
+-}
+-
+-status_t MuxOMX::useIonBuffer(
+-            node_id node, OMX_U32 port_index, unsigned char* virAddr, OMX_S32 fd, size_t size, buffer_id *buffer) {
+-    return getOMX(node)->useIonBuffer(node, port_index, virAddr, fd, size, buffer);
+-}
+-#endif
+-
+ status_t MuxOMX::useGraphicBuffer(
+         node_id node, OMX_U32 port_index,
+         const sp<GraphicBuffer> &graphicBuffer, buffer_id *buffer) {
+diff --git a/media/libstagefright/OMXCodec.cpp b/media/libstagefright/OMXCodec.cpp
+index fc58bfd..269028a 100644
+--- a/media/libstagefright/OMXCodec.cpp
++++ b/media/libstagefright/OMXCodec.cpp
+@@ -80,10 +80,6 @@
+ #include "include/FLACDecoder.h"
+ #endif
+ 
+-#ifdef MTK_HARDWARE
+-#include <bufferallocator/OMXCodecBufferAllocator.h>
+-#endif
+-
+ namespace android {
+ 
+ #ifdef USE_SAMSUNG_COLORFORMAT
+@@ -416,27 +412,7 @@ uint32_t OMXCodec::getComponentQuirks(
+         quirks |= kRequiresFlushCompleteEmulation;
+     }
+ #endif // DOLBY_UDC
+-
+-#ifdef MTK_HARDWARE
+-    if (list->codecHasQuirk(
+-                index, "decoder-lies-about-number-of-channels")) {
+-        quirks |= kDecoderLiesAboutNumberOfChannels;
+-    }
+-    if (list->codecHasQuirk(
+-                index, "supports-multiple-frames-per-input-buffer")) {
+-        quirks |= kSupportsMultipleFramesPerInputBuffer;
+-    }
+-    if (list->codecHasQuirk(
+-                index, "wants-NAL-fragments")) {
+-        quirks |= kWantsNALFragments;
+-    }
+-    if (list->codecHasQuirk(
+-                index, "avoid-memcpy-input-recording-frames")) {
+-        quirks |= kAvoidMemcopyInputRecordingFrames;
+-    }
+-#endif
+-
+-#if OMAP_ENHANCEMENT
++#ifdef OMAP_ENHANCEMENT
+     if (list->codecHasQuirk(
+                 index, "avoid-memcopy-input-recording-frames")) {
+       quirks |= kAvoidMemcopyInputRecordingFrames;
+@@ -694,13 +670,6 @@ status_t OMXCodec::configureCodec(const sp<MetaData> &meta) {
+     ALOGV("configureCodec protected=%d",
+          (mFlags & kEnableGrallocUsageProtected) ? 1 : 0);
+ 
+-#ifdef MTK_HARDWARE
+-    if (!strncmp(mComponentName, "OMX.MTK.", 8)) {
+-        mMtkBufferAllocator->initCodec(mMIME, meta);
+-    }
+-#endif
+-
+-
+     if (!(mFlags & kIgnoreCodecSpecificData)) {
+         uint32_t type;
+         const void *data;
+@@ -1184,15 +1153,6 @@ static size_t getFrameSize(
+         case OMX_SEC_COLOR_FormatNV12TPhysicalAddress:
+         case OMX_SEC_COLOR_FormatNV12LPhysicalAddress:
+ #endif
+-#ifdef MTK_HARDWARE
+-        /*
+-         * FIXME: We use this FrameSize for temp solution
+-         * in order to check functionality,
+-         * and we need to get FrameSize accurately in the future
+-         */
+-        case OMX_MTK_COLOR_FormatYV12:
+-        case OMX_COLOR_FormatVendorMTKYUV:
+-#endif
+             return (width * height * 3) / 2;
+ #ifdef USE_SAMSUNG_COLORFORMAT
+         case OMX_SEC_COLOR_FormatNV12LVirtualAddress:
+@@ -1647,7 +1607,6 @@ status_t OMXCodec::setupAVCEncoderParameters(const sp<MetaData>& meta) {
+     h264type.eLevel = static_cast<OMX_VIDEO_AVCLEVELTYPE>(profileLevel.mLevel);
+ 
+     // XXX
+-#ifndef MTK_HARDWARE
+ #ifdef USE_TI_DUCATI_H264_PROFILE
+     if ((strncmp(mComponentName, "OMX.TI.DUCATI1", 14) != 0)
+             && (h264type.eProfile != OMX_VIDEO_AVCProfileBaseline)) {
+@@ -1662,7 +1621,6 @@ status_t OMXCodec::setupAVCEncoderParameters(const sp<MetaData>& meta) {
+             h264type.eProfile);
+         h264type.eProfile = OMX_VIDEO_AVCProfileBaseline;
+     }
+-#endif
+ 
+     if (h264type.eProfile == OMX_VIDEO_AVCProfileBaseline) {
+         h264type.nSliceHeaderSpacing = 0;
+@@ -1973,10 +1931,6 @@ OMXCodec::OMXCodec(
+     } else
+ #endif
+         mSource = source;
+-
+-#ifdef MTK_HARDWARE
+-    mMtkBufferAllocator = new OMXCodecBufferAllocator(this);
+-#endif
+ }
+ 
+ // static
+@@ -2090,17 +2044,8 @@ OMXCodec::~OMXCodec() {
+ 
+     mNode = NULL;
+ 
+-#ifdef MTK_HARDWARE
+-    if (!strncmp(mComponentName, "OMX.MTK.", 8)) {
+-        mMtkBufferAllocator->releaseBuffers();
+-    } else {
+-        releaseMediaBuffersOn(kPortIndexOutput);
+-        releaseMediaBuffersOn(kPortIndexInput);
+-    }
+-#else
+     releaseMediaBuffersOn(kPortIndexOutput);
+     releaseMediaBuffersOn(kPortIndexInput);
+-#endif
+ 
+     setState(DEAD);
+ 
+@@ -2174,12 +2119,6 @@ status_t OMXCodec::allocateBuffers() {
+ }
+ 
+ status_t OMXCodec::allocateBuffersOnPort(OMX_U32 portIndex) {
+-#ifdef MTK_HARDWARE
+-    if (!strncmp(mComponentName, "OMX.MTK.", 8)) {
+-        return mMtkBufferAllocator->allocateBuffersOnPort(portIndex);
+-    }
+-#endif
+-
+     if (mNativeWindow != NULL && portIndex == kPortIndexOutput) {
+         return allocateOutputBuffersFromNativeWindow();
+     }
+@@ -2394,43 +2333,11 @@ status_t OMXCodec::allocateOutputBuffersFromNativeWindow() {
+     }
+ 
+ #ifndef USE_SAMSUNG_COLORFORMAT
+-#ifdef MTK_HARDWARE
+-    uint32_t eHalColorFormat;
+-    switch (def.format.video.eColorFormat) {
+-        case OMX_COLOR_Format32bitARGB8888:
+-            eHalColorFormat = HAL_PIXEL_FORMAT_RGBA_8888;
+-            break;
+-#ifdef MTK_OMX_USES_PRIVATE_YUV
+-        default:
+-            eHalColorFormat = HAL_PIXEL_FORMAT_YUV_PRIVATE;
+-#else
+-        case OMX_COLOR_FormatYUV420Planar:
+-            eHalColorFormat = HAL_PIXEL_FORMAT_I420;
+-            break;
+-        case OMX_COLOR_FormatVendorMTKYUV:
+-            eHalColorFormat = HAL_PIXEL_FORMAT_NV12_BLK;
+-            break;
+-        case OMX_MTK_COLOR_FormatYV12:
+-            eHalColorFormat = HAL_PIXEL_FORMAT_YV12;
+-            break;
+-        default:
+-            eHalColorFormat = HAL_PIXEL_FORMAT_I420;
+-            break;
+-#endif
+-    }
+-
+-    err = native_window_set_buffers_geometry(
+-            mNativeWindow.get(),
+-            def.format.video.nStride,
+-            def.format.video.nSliceHeight,
+-            eHalColorFormat);
+-#else
+     err = native_window_set_buffers_geometry(
+             mNativeWindow.get(),
+             def.format.video.nFrameWidth,
+             def.format.video.nFrameHeight,
+             def.format.video.eColorFormat);
+-#endif
+ #else
+     OMX_COLOR_FORMATTYPE eColorFormat;
+ 
+@@ -2498,10 +2405,6 @@ status_t OMXCodec::allocateOutputBuffersFromNativeWindow() {
+ 
+     ALOGV("native_window_set_usage usage=0x%lx", usage);
+ 
+-#ifdef MTK_HARDWARE
+-    usage |= (GRALLOC_USAGE_SW_WRITE_OFTEN | GRALLOC_USAGE_SW_READ_OFTEN);
+-#endif
+-
+     err = native_window_set_usage(
+             mNativeWindow.get(), usage | GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_EXTERNAL_DISP);
+ 
+@@ -2519,7 +2422,7 @@ status_t OMXCodec::allocateOutputBuffersFromNativeWindow() {
+         return err;
+     }
+ 
+-#if defined(QCOM_HARDWARE) || defined(MTK_HARDWARE)
++#ifdef QCOM_HARDWARE
+     // Add extra buffer to display queue to get around dequeue+wait
+     // blocking too long in case BufferQueue is in sync-mode and advertises
+     // only 1 buffer. Also, restrict to 2 extra buffers for > 1080p
+@@ -2884,7 +2787,7 @@ void OMXCodec::on_message(const omx_message &msg) {
+ 
+             // Buffer could not be released until empty buffer done is called.
+             if (info->mMediaBuffer != NULL) {
+-#if defined(OMAP_ENHANCEMENT) || defined(MTK_HARDWARE)
++#ifdef OMAP_ENHANCEMENT
+                 if (mIsEncoder &&
+                     (mQuirks & kAvoidMemcopyInputRecordingFrames)) {
+                     // If zero-copy mode is enabled this will send the
+@@ -3539,11 +3442,7 @@ status_t OMXCodec::freeBuffersOnPort(
+     for (size_t i = buffers->size(); i-- > 0;) {
+         BufferInfo *info = &buffers->editItemAt(i);
+ 
+-#ifdef MTK_HARDWARE
+-        if (onlyThoseWeOwn && (info->mStatus == OWNED_BY_COMPONENT || info->mStatus == OWNED_BY_CLIENT)) {
+-#else
+         if (onlyThoseWeOwn && info->mStatus == OWNED_BY_COMPONENT) {
+-#endif
+             continue;
+         }
+ 
+@@ -3930,7 +3829,7 @@ bool OMXCodec::drainInputBuffer(BufferInfo *info) {
+ 
+                 CHECK(info->mMediaBuffer == NULL);
+                 info->mMediaBuffer = srcBuffer;
+-#if defined(OMAP_ENHANCEMENT) || defined(MTK_HARDWARE)
++#ifdef OMAP_ENHANCEMENT
+         } else if (mIsEncoder && (mQuirks & kAvoidMemcopyInputRecordingFrames)) {
+                 CHECK(mOMXLivesLocally && offset == 0);
+ 
+@@ -3990,13 +3889,6 @@ bool OMXCodec::drainInputBuffer(BufferInfo *info) {
+         }
+ 
+         int64_t lastBufferTimeUs;
+-#ifdef MTK_HARDWARE
+-        // MTK decoders sporadically don't set the time in some buffers
+-        if (!(srcBuffer->meta_data()->findInt64(kKeyTime, &lastBufferTimeUs))) {
+-            lastBufferTimeUs = 0;
+-            srcBuffer->meta_data()->setInt64(kKeyTime, lastBufferTimeUs);
+-        }
+-#endif
+         CHECK(srcBuffer->meta_data()->findInt64(kKeyTime, &lastBufferTimeUs));
+         CHECK(lastBufferTimeUs >= 0);
+         if (mIsEncoder && mIsVideo) {
+@@ -5456,12 +5348,10 @@ status_t OMXCodec::read(
+     }
+     *buffer = info->mMediaBuffer;
+ 
+-#ifndef MTK_HARDWARE
+     if (info->mOutputCropChanged) {
+         initNativeWindowCrop();
+         info->mOutputCropChanged = false;
+     }
+-#endif
+     return OK;
+ }
+ 
+@@ -6103,10 +5993,6 @@ void OMXCodec::initOutputFormat(const sp<MetaData> &inputFormat) {
+ 
+             mOutputFormat->setInt32(kKeyWidth, video_def->nFrameWidth);
+             mOutputFormat->setInt32(kKeyHeight, video_def->nFrameHeight);
+-#ifdef MTK_HARDWARE
+-            mOutputFormat->setInt32(kKeyStride, video_def->nStride);
+-            mOutputFormat->setInt32(kKeySliceHeight, video_def->nSliceHeight);
+-#endif
+             mOutputFormat->setInt32(kKeyColorFormat, video_def->eColorFormat);
+ 
+             if (!mIsEncoder) {
+@@ -6149,12 +6035,9 @@ void OMXCodec::initOutputFormat(const sp<MetaData> &inputFormat) {
+                 }
+ 
+                 if (mNativeWindow != NULL) {
+-#ifndef MTK_HARDWARE
+                      if (mInSmoothStreamingMode) {
+                          mOutputCropChanged = true;
+-                     } else
+-#endif
+-                     {
++                     } else {
+                          initNativeWindowCrop();
+                      }
+                 }
+@@ -6240,7 +6123,7 @@ status_t OMXCodec::resumeLocked(bool drainInputBuf) {
+ 
+ ////////////////////////////////////////////////////////////////////////////////
+ 
+-#if defined(OMAP_ENHANCEMENT) || defined(MTK_HARDWARE)
++#ifdef OMAP_ENHANCEMENT
+ void OMXCodec::restorePatchedDataPointer(BufferInfo *info) {
+     CHECK(mIsEncoder && (mQuirks & kAvoidMemcopyInputRecordingFrames));
+     CHECK(mOMXLivesLocally);
+@@ -6249,7 +6132,6 @@ void OMXCodec::restorePatchedDataPointer(BufferInfo *info) {
+     header->pBuffer = (OMX_U8 *)info->mData;
+ }
+ #endif
+-
+ status_t QueryCodecs(
+         const sp<IOMX> &omx,
+         const char *mime, bool queryDecoders, bool hwCodecOnly,
+diff --git a/media/libstagefright/StagefrightMetadataRetriever.cpp b/media/libstagefright/StagefrightMetadataRetriever.cpp
+index b6752b9..2bbe61b 100644
+--- a/media/libstagefright/StagefrightMetadataRetriever.cpp
++++ b/media/libstagefright/StagefrightMetadataRetriever.cpp
+@@ -145,7 +145,6 @@ static VideoFrame *extractVideoFrameWithCodecFlags(
+ 
+     sp<MetaData> format = source->getFormat();
+ 
+-#ifndef MTK_HARDWARE
+     // XXX:
+     // Once all vendors support OMX_COLOR_FormatYUV420Planar, we can
+     // remove this check and always set the decoder output color format
+@@ -160,7 +159,6 @@ static VideoFrame *extractVideoFrameWithCodecFlags(
+         }
+ #endif
+     }
+-#endif
+ 
+     sp<MediaSource> decoder =
+         OMXCodec::Create(
+@@ -293,20 +291,8 @@ static VideoFrame *extractVideoFrameWithCodecFlags(
+     int32_t srcFormat;
+     CHECK(meta->findInt32(kKeyColorFormat, &srcFormat));
+ 
+-#ifdef MTK_HARDWARE
+-    {
+-        int32_t Stridewidth,SliceHeight;
+-        CHECK(meta->findInt32(kKeyStride, &Stridewidth));
+-        CHECK(meta->findInt32(kKeySliceHeight, &SliceHeight));
+-        ALOGD("kKeyWidth=%d,kKeyHeight=%d",width,height);
+-        ALOGD("Stridewidth=%d,SliceHeight=%d",Stridewidth,SliceHeight);
+-
+-        width=Stridewidth;
+-        height=SliceHeight;
+-    }
+-#endif
+-
+-    ColorConverter converter((OMX_COLOR_FORMATTYPE)srcFormat, OMX_COLOR_Format16bitRGB565);
++    ColorConverter converter(
++            (OMX_COLOR_FORMATTYPE)srcFormat, OMX_COLOR_Format16bitRGB565);
+ 
+     if (converter.isValid()) {
+         err = converter.convert(
+diff --git a/media/libstagefright/colorconversion/Android.mk b/media/libstagefright/colorconversion/Android.mk
+index 38df650..59a64ba 100644
+--- a/media/libstagefright/colorconversion/Android.mk
++++ b/media/libstagefright/colorconversion/Android.mk
+@@ -9,12 +9,6 @@ LOCAL_C_INCLUDES := \
+         $(TOP)/frameworks/native/include/media/openmax \
+         $(TOP)/hardware/msm7k
+ 
+-
+-ifeq ($(BOARD_HAS_MTK_HARDWARE),true)
+-    LOCAL_C_INCLUDES += \
+-        $(TOP)/hardware/mediatek/media/include
+-endif
+-
+ LOCAL_MODULE:= libstagefright_color_conversion
+ 
+ include $(BUILD_STATIC_LIBRARY)
+diff --git a/media/libstagefright/colorconversion/ColorConverter.cpp b/media/libstagefright/colorconversion/ColorConverter.cpp
+index 1577cda..597167f 100644
+--- a/media/libstagefright/colorconversion/ColorConverter.cpp
++++ b/media/libstagefright/colorconversion/ColorConverter.cpp
+@@ -22,10 +22,6 @@
+ #include <media/stagefright/ColorConverter.h>
+ #include <media/stagefright/MediaErrors.h>
+ 
+-#ifdef MTK_HARDWARE
+-#include <mtkcolorconverter/MtkColorConverter.h>
+-#endif
+-
+ namespace android {
+ 
+ ColorConverter::ColorConverter(
+@@ -33,18 +29,11 @@ ColorConverter::ColorConverter(
+     : mSrcFormat(from),
+       mDstFormat(to),
+       mClip(NULL) {
+-#ifdef MTK_HARDWARE
+-    mMtkColorConverter = new MtkColorConverter(this);
+-#endif
+ }
+ 
+ ColorConverter::~ColorConverter() {
+     delete[] mClip;
+     mClip = NULL;
+-#ifdef MTK_HARDWARE
+-    delete mMtkColorConverter;
+-    mMtkColorConverter = NULL;
+-#endif
+ }
+ 
+ bool ColorConverter::isValid() const {
+@@ -58,11 +47,6 @@ bool ColorConverter::isValid() const {
+         case OMX_QCOM_COLOR_FormatYVU420SemiPlanar:
+         case OMX_COLOR_FormatYUV420SemiPlanar:
+         case OMX_TI_COLOR_FormatYUV420PackedSemiPlanar:
+-#ifdef MTK_HARDWARE
+-        case OMX_MTK_COLOR_FormatYV12:
+-        case OMX_COLOR_FormatVendorMTKYUV:
+-        case OMX_COLOR_FormatVendorMTKYUV_FCM:
+-#endif
+             return true;
+ 
+         default:
+@@ -119,11 +103,7 @@ status_t ColorConverter::convert(
+ 
+     switch (mSrcFormat) {
+         case OMX_COLOR_FormatYUV420Planar:
+-#ifdef MTK_HARDWARE
+-            err = mMtkColorConverter->convertYUVToRGBHW(src, dst);
+-#else
+             err = convertYUV420Planar(src, dst);
+-#endif
+             break;
+ 
+         case OMX_COLOR_FormatCbYCrY:
+@@ -142,14 +122,6 @@ status_t ColorConverter::convert(
+             err = convertTIYUV420PackedSemiPlanar(src, dst);
+             break;
+ 
+-#ifdef MTK_HARDWARE
+-        case OMX_MTK_COLOR_FormatYV12:
+-        case OMX_COLOR_FormatVendorMTKYUV:
+-        case OMX_COLOR_FormatVendorMTKYUV_FCM:
+-            err = mMtkColorConverter->convertYUVToRGBHW(src, dst);
+-            break;
+-#endif
+-
+         default:
+         {
+             CHECK(!"Should not be here. Unknown color conversion.");
+diff --git a/media/libstagefright/include/AwesomePlayer.h b/media/libstagefright/include/AwesomePlayer.h
+index b2224e6..4003948 100644
+--- a/media/libstagefright/include/AwesomePlayer.h
++++ b/media/libstagefright/include/AwesomePlayer.h
+@@ -107,9 +107,6 @@ struct AwesomePlayer {
+     void postAudioEOS(int64_t delayUs = 0ll);
+     void postAudioSeekComplete();
+     void postAudioTearDown();
+-#ifdef MTK_HARDWARE
+-    void mtk_omx_get_current_time(int64_t* pReal_time);
+-#endif
+     status_t dump(int fd, const Vector<String16> &args) const;
+ 
+     status_t suspend();
+@@ -415,9 +412,6 @@ private:
+ #endif
+     AwesomePlayer(const AwesomePlayer &);
+     AwesomePlayer &operator=(const AwesomePlayer &);
+-#ifdef MTK_HARDWARE
+-    int64_t mAVSyncTimeUs;
+-#endif
+     bool mReadRetry;
+     bool mCustomAVSync;
+ 
+diff --git a/media/libstagefright/include/OMX.h b/media/libstagefright/include/OMX.h
+index 2a6e576..31a5077 100644
+--- a/media/libstagefright/include/OMX.h
++++ b/media/libstagefright/include/OMX.h
+@@ -79,26 +79,6 @@ public:
+             node_id node, OMX_U32 port_index, const sp<IMemory> &params,
+             buffer_id *buffer);
+ 
+-#ifdef MTK_HARDWARE
+-    virtual status_t useBuffer(
+-            node_id node, OMX_U32 port_index, unsigned char* virAddr, size_t size,
+-            buffer_id *buffer);
+-
+-    virtual status_t useBuffer(
+-            node_id node, OMX_U32 port_index, unsigned char* virAddr, size_t size, OMX_U32 offset,
+-            buffer_id *buffer);
+-
+-    virtual status_t registerBuffer(
+-            node_id node, OMX_U32 port_index, const sp<IMemoryHeap> &heap);
+-
+-    virtual status_t registerBuffer2(
+-            node_id node, OMX_U32 port_index,  const sp<IMemoryHeap> &HeapBase);
+-
+-  virtual status_t useIonBuffer(
+-            node_id node, OMX_U32 port_index,
+-            unsigned char* virAddr, OMX_S32 fd, size_t size, buffer_id *buffer);
+-#endif
+-
+     virtual status_t useGraphicBuffer(
+             node_id node, OMX_U32 port_index,
+             const sp<GraphicBuffer> &graphicBuffer, buffer_id *buffer);
+diff --git a/media/libstagefright/include/OMXNodeInstance.h b/media/libstagefright/include/OMXNodeInstance.h
+index f698a7e..339179e 100644
+--- a/media/libstagefright/include/OMXNodeInstance.h
++++ b/media/libstagefright/include/OMXNodeInstance.h
+@@ -29,15 +29,7 @@ class IOMXObserver;
+ struct OMXMaster;
+ struct GraphicBufferSource;
+ 
+-#ifdef MTK_HARDWARE
+-struct OMXNodeInstanceBufferHandler;
+-#endif
+-
+ struct OMXNodeInstance {
+-#ifdef MTK_HARDWARE
+-    friend struct OMXNodeInstanceBufferHandler;
+-#endif
+-
+     OMXNodeInstance(
+             OMX *owner, const sp<IOMXObserver> &observer);
+ 
+@@ -78,25 +70,6 @@ struct OMXNodeInstance {
+             OMX_U32 portIndex, const sp<GraphicBuffer> &graphicBuffer,
+             OMX::buffer_id *buffer);
+ 
+-#ifdef MTK_HARDWARE
+-    status_t useBuffer(
+-            OMX_U32 portIndex, unsigned char* virAddr, size_t size,
+-            OMX::buffer_id *buffer);
+-
+-    status_t useBuffer(
+-            OMX_U32 portIndex, unsigned char* virAddr, size_t size, OMX_U32 offset,
+-            OMX::buffer_id *buffer);
+-
+-    status_t registerBuffer(
+-            OMX_U32 portIndex, const sp<IMemoryHeap> &heap);
+-
+-    status_t registerBuffer2(
+-            OMX_U32 portIndex, const sp<IMemoryHeap> &HeapBase);
+-
+-    status_t useIonBuffer(
+-            OMX_U32 port_index, unsigned char* virAddr, OMX_S32 fd, size_t size, OMX::buffer_id *buffer);
+-#endif
+-
+     status_t updateGraphicBufferInMeta(
+             OMX_U32 portIndex, const sp<GraphicBuffer> &graphicBuffer,
+             OMX::buffer_id buffer);
+@@ -151,9 +124,6 @@ private:
+     OMX::node_id mNodeID;
+     OMX_HANDLETYPE mHandle;
+     sp<IOMXObserver> mObserver;
+-#ifdef MTK_HARDWARE
+-    OMXNodeInstanceBufferHandler *mMtkBufferHandler;
+-#endif
+     bool mDying;
+ 
+     // Lock only covers mGraphicBufferSource.  We can't always use mLock
+diff --git a/media/libstagefright/omx/Android.mk b/media/libstagefright/omx/Android.mk
+index 24bebf7..724325f 100644
+--- a/media/libstagefright/omx/Android.mk
++++ b/media/libstagefright/omx/Android.mk
+@@ -27,17 +27,6 @@ LOCAL_SHARED_LIBRARIES :=               \
+         libstagefright_foundation       \
+         libdl
+ 
+-ifeq ($(BOARD_HAS_MTK_HARDWARE),true)
+-    LOCAL_C_INCLUDES += \
+-        $(TOP)/hardware/mediatek/media/include
+-
+-    LOCAL_SHARED_LIBRARIES += \
+-        libstagefright_memutil
+-
+-    LOCAL_STATIC_LIBRARIES += \
+-        libstagefright_bufferallocator
+-endif
+-
+ ifeq ($(BOARD_USES_PROPRIETARY_OMX),SAMSUNG)
+ LOCAL_CFLAGS     += -DSAMSUNG_OMX
+ endif
+diff --git a/media/libstagefright/omx/OMX.cpp b/media/libstagefright/omx/OMX.cpp
+index c45d094..870b7ff 100644
+--- a/media/libstagefright/omx/OMX.cpp
++++ b/media/libstagefright/omx/OMX.cpp
+@@ -370,40 +370,6 @@ status_t OMX::signalEndOfInputStream(node_id node) {
+     return findInstance(node)->signalEndOfInputStream();
+ }
+ 
+-#ifdef MTK_HARDWARE
+- status_t OMX::useBuffer(
+-            node_id node, OMX_U32 port_index, unsigned char* virAddr, size_t size,
+-            buffer_id *buffer) {
+-    return findInstance(node)->useBuffer(
+-            port_index, virAddr, size, buffer);
+-}
+-
+-status_t OMX::useBuffer(
+-            node_id node, OMX_U32 port_index, unsigned char* virAddr, size_t size, OMX_U32 offset,
+-            buffer_id *buffer) {
+-    return findInstance(node)->useBuffer(
+-            port_index, virAddr, size, offset, buffer);
+-}
+-
+-status_t OMX::registerBuffer(
+-        node_id node, OMX_U32 port_index, const sp<IMemoryHeap> &heap) {
+-    return findInstance(node)->registerBuffer(
+-            port_index, heap);
+-}
+-
+-status_t OMX::registerBuffer2(
+-        node_id node, OMX_U32 port_index, const sp<IMemoryHeap> &HeapBase) {
+-    return findInstance(node)->registerBuffer2(
+-            port_index, HeapBase);
+-}
+-
+-status_t OMX::useIonBuffer(
+-        node_id node, OMX_U32 port_index, unsigned char* virAddr, OMX_S32 fd, size_t size, buffer_id *buffer) {
+-    return findInstance(node)->useIonBuffer(
+-            port_index, virAddr, fd, size, buffer);
+-}
+-#endif
+-
+ status_t OMX::allocateBuffer(
+         node_id node, OMX_U32 port_index, size_t size,
+         buffer_id *buffer, void **buffer_data) {
+diff --git a/media/libstagefright/omx/OMXNodeInstance.cpp b/media/libstagefright/omx/OMXNodeInstance.cpp
+index 38667d1..de08e18 100644
+--- a/media/libstagefright/omx/OMXNodeInstance.cpp
++++ b/media/libstagefright/omx/OMXNodeInstance.cpp
+@@ -30,11 +30,6 @@
+ #include <media/stagefright/foundation/ADebug.h>
+ #include <media/stagefright/MediaErrors.h>
+ 
+-#ifdef MTK_HARDWARE
+-#include <bufferallocator/OMXNodeInstanceBufferHandler.h>
+-#endif
+-
+-
+ static const OMX_U32 kPortIndexInput = 0;
+ 
+ namespace android {
+@@ -103,18 +98,10 @@ OMXNodeInstance::OMXNodeInstance(
+       mHandle(NULL),
+       mObserver(observer),
+       mDying(false) {
+-#ifdef MTK_HARDWARE
+-    mMtkBufferHandler = new OMXNodeInstanceBufferHandler(this);
+-#endif
+ }
+ 
+ OMXNodeInstance::~OMXNodeInstance() {
+     CHECK(mHandle == NULL);
+-
+-#ifdef MTK_HARDWARE
+-    delete mMtkBufferHandler;
+-    mMtkBufferHandler = NULL;
+-#endif
+ }
+ 
+ void OMXNodeInstance::setHandle(OMX::node_id node_id, OMX_HANDLETYPE handle) {
+@@ -510,35 +497,6 @@ status_t OMXNodeInstance::useBuffer(
+     return OK;
+ }
+ 
+-#ifdef MTK_HARDWARE
+-status_t OMXNodeInstance::useBuffer(
+-         OMX_U32 portIndex, unsigned char* virAddr, size_t size,
+-        OMX::buffer_id *buffer) {
+-    return mMtkBufferHandler->useBuffer(portIndex, virAddr, size, buffer);
+- }
+-
+- status_t OMXNodeInstance::useBuffer(
+-        OMX_U32 portIndex, unsigned char* virAddr, size_t size, OMX_U32 offset,
+-        OMX::buffer_id *buffer) {
+-    return mMtkBufferHandler->useBuffer(portIndex, virAddr, size, offset, buffer);
+- }
+-
+-status_t OMXNodeInstance::registerBuffer(
+-        OMX_U32 portIndex, const sp<IMemoryHeap> &heap) {
+-    return mMtkBufferHandler->registerBuffer(portIndex, heap);
+-}
+-
+-status_t OMXNodeInstance::registerBuffer2(
+-        OMX_U32 portIndex, const sp<IMemoryHeap> &HeapBase) {
+-    return mMtkBufferHandler->registerBuffer2(portIndex, HeapBase);
+-}
+-
+-status_t OMXNodeInstance::useIonBuffer(
+-            OMX_U32 portIndex, unsigned char* virAddr, OMX_S32 fd, size_t size, OMX::buffer_id *buffer) {
+-    return mMtkBufferHandler->useIonBuffer(portIndex, virAddr, fd, size, buffer);
+-}
+-#endif
+-
+ status_t OMXNodeInstance::useGraphicBuffer2_l(
+         OMX_U32 portIndex, const sp<GraphicBuffer>& graphicBuffer,
+         OMX::buffer_id *buffer) {
+@@ -600,15 +558,12 @@ status_t OMXNodeInstance::useGraphicBuffer(
+ 
+     // See if the newer version of the extension is present.
+     OMX_INDEXTYPE index;
+-
+-#ifndef MTK_HARDWARE
+     if (OMX_GetExtensionIndex(
+             mHandle,
+             const_cast<OMX_STRING>("OMX.google.android.index.useAndroidNativeBuffer2"),
+             &index) == OMX_ErrorNone) {
+         return useGraphicBuffer2_l(portIndex, graphicBuffer, buffer);
+     }
+-#endif
+ 
+     OMX_STRING name = const_cast<OMX_STRING>(
+         "OMX.google.android.index.useAndroidNativeBuffer");
+diff --git a/services/audioflinger/Android.mk b/services/audioflinger/Android.mk
+index 8593841..d0b712d 100644
+--- a/services/audioflinger/Android.mk
++++ b/services/audioflinger/Android.mk
+@@ -82,12 +82,6 @@ LOCAL_STATIC_LIBRARIES := \
+     libcpustats \
+     libmedia_helper
+ 
+-ifeq ($(BOARD_HAS_MTK_HARDWARE),true)
+-    LOCAL_STATIC_LIBRARIES += libstagefright_audioresamplermtk
+-    LOCAL_C_INCLUDES += $(TOP)/hardware/mediatek/media/include
+-    LOCAL_SHARED_LIBRARIES += libblisrc
+-endif
+-
+ LOCAL_MODULE:= libaudioflinger
+ 
+ LOCAL_SRC_FILES += FastMixer.cpp FastMixerState.cpp AudioWatchdog.cpp
+@@ -139,12 +133,6 @@ LOCAL_SHARED_LIBRARIES := \
+     libutils \
+     liblog
+ 
+-ifeq ($(BOARD_HAS_MTK_HARDWARE),true)
+-    LOCAL_STATIC_LIBRARIES += libstagefright_audioresamplermtk
+-    LOCAL_C_INCLUDES += $(TOP)/hardware/mediatek/media/include
+-    LOCAL_SHARED_LIBRARIES += libblisrc
+-endif
+-
+ LOCAL_MODULE:= test-resample
+ 
+ LOCAL_MODULE_TAGS := optional
+diff --git a/services/audioflinger/AudioFlinger.cpp b/services/audioflinger/AudioFlinger.cpp
+index c159fa8..b8d8aab 100644
+--- a/services/audioflinger/AudioFlinger.cpp
++++ b/services/audioflinger/AudioFlinger.cpp
+@@ -127,29 +127,6 @@ size_t AudioFlinger::mTeeSinkTrackFrames = kTeeSinkTrackFramesDefault;
+ static const nsecs_t kMinGlobalEffectEnabletimeNs = seconds(7200);
+ 
+ // ----------------------------------------------------------------------------
+-#ifdef MTK_HARDWARE
+-status_t AudioFlinger::SetAudioData(int par1,size_t len,void *ptr)
+-{
+-    ALOGV("SetAudioData par1 = %d,len = %d ",par1,len);
+-    AutoMutex lock(mHardwareLock);
+-    audio_hw_device_t *dev = mPrimaryHardwareDev->hwDevice();
+-    mHardwareStatus = AUDIO_HW_SET_PARAMETER;
+-    dev->SetAudioData(dev,par1,len,ptr);
+-    mHardwareStatus = AUDIO_HW_IDLE;
+-    return NO_ERROR;
+-}
+-
+-status_t AudioFlinger::GetAudioData(int par1,size_t len,void *ptr)
+-{
+-    ALOGV("GetAudioData par1 = %d,len = %d ",par1,len);
+-    AutoMutex lock(mHardwareLock);
+-    audio_hw_device_t *dev = mPrimaryHardwareDev->hwDevice();
+-    mHardwareStatus = AUDIO_HW_SET_PARAMETER;
+-    dev->GetAudioData(dev,par1,len,ptr);
+-    mHardwareStatus = AUDIO_HW_IDLE;
+-    return NO_ERROR;
+-}
+-#endif
+ 
+ static int load_audio_interface(const char *if_name, audio_hw_device_t **dev)
+ {
+@@ -1052,15 +1029,6 @@ status_t AudioFlinger::setStreamVolume(audio_stream_type_t stream, float value,
+         thread->setStreamVolume(stream, value);
+     }
+ 
+-#ifdef MTK_HARDWARE
+-    // FM Volume is controlled by hardware, we want to keep it in sync with
+-    // the music stream.
+-    if (stream == AUDIO_STREAM_MUSIC) {
+-        audio_hw_device_t *dev = mPrimaryHardwareDev->hwDevice();
+-        dev->set_parameters(dev, String8::format("SetFmVolume=%f", value));
+-    }
+-#endif
+-
+     return NO_ERROR;
+ }
+ 
+@@ -2208,9 +2176,7 @@ audio_io_handle_t AudioFlinger::openInput(audio_module_handle_t module,
+     // resample the input and do mono to stereo or stereo to mono conversions on 16 bit PCM inputs.
+     if (status == BAD_VALUE &&
+         reqFormat == config.format && config.format == AUDIO_FORMAT_PCM_16_BIT &&
+-#ifndef MTK_HARDWARE
+         (config.sample_rate <= 2 * reqSamplingRate) &&
+-#endif
+         (getInputChannelCount(config.channel_mask) <= FCC_2) && (getInputChannelCount(reqChannels) <= FCC_2)) {
+         ALOGV("openInput() reopening with proposed sampling rate and channel mask");
+         inStream = NULL;
+diff --git a/services/audioflinger/AudioFlinger.h b/services/audioflinger/AudioFlinger.h
+index 78075d4..b861e4f 100644
+--- a/services/audioflinger/AudioFlinger.h
++++ b/services/audioflinger/AudioFlinger.h
+@@ -107,11 +107,6 @@ class AudioFlinger :
+ public:
+     static const char* getServiceName() ANDROID_API { return "media.audio_flinger"; }
+ 
+-#ifdef MTK_HARDWARE
+-    virtual status_t SetAudioData(int par1,size_t len, void *ptr);
+-    virtual status_t GetAudioData(int par1,size_t len, void *ptr);
+-#endif
+-
+     virtual     status_t    dump(int fd, const Vector<String16>& args);
+ 
+     // IAudioFlinger interface, in binder opcode order
+diff --git a/services/audioflinger/AudioResampler.cpp b/services/audioflinger/AudioResampler.cpp
+index 6b7d782..ebbdb33 100644
+--- a/services/audioflinger/AudioResampler.cpp
++++ b/services/audioflinger/AudioResampler.cpp
+@@ -25,9 +25,6 @@
+ #include "AudioResampler.h"
+ #include "AudioResamplerSinc.h"
+ #include "AudioResamplerCubic.h"
+-#ifdef MTK_HARDWARE
+-#include "audioresampler/AudioResamplerMtkWrapper.h"
+-#endif
+ 
+ #ifdef QTI_RESAMPLER
+ #include "AudioResamplerQTI.h"
+@@ -96,9 +93,6 @@ bool AudioResampler::qualityIsSupported(src_quality quality)
+ #ifdef QTI_RESAMPLER
+     case QTI_QUALITY:
+ #endif
+-#ifdef MTK_HARDWARE
+-    case MTK_QUALITY:
+-#endif
+         return true;
+     default:
+         return false;
+@@ -121,8 +115,6 @@ void AudioResampler::init_routine()
+             ALOGD("forcing AudioResampler quality to %d", defaultQuality);
+ #ifdef QTI_RESAMPLER
+             if (defaultQuality < DEFAULT_QUALITY || defaultQuality > QTI_QUALITY) {
+-#elif defined(MTK_HARDWARE)
+-            if (defaultQuality < DEFAULT_QUALITY || defaultQuality > MTK_QUALITY) {
+ #else
+             if (defaultQuality < DEFAULT_QUALITY || defaultQuality > VERY_HIGH_QUALITY) {
+ #endif
+@@ -143,10 +135,6 @@ uint32_t AudioResampler::qualityMHz(src_quality quality)
+         return 6;
+     case HIGH_QUALITY:
+         return 20;
+-#ifdef MTK_HARDWARE
+-    case MTK_QUALITY:
+-        return 28;
+-#endif
+     case VERY_HIGH_QUALITY:
+ #ifdef QTI_RESAMPLER
+     case QTI_QUALITY: //for QTI_QUALITY, currently assuming same as VHQ
+@@ -191,9 +179,6 @@ AudioResampler* AudioResampler::create(int bitDepth, int inChannelCount,
+         default:
+         case DEFAULT_QUALITY:
+         case LOW_QUALITY:
+-#ifdef MTK_HARDWARE
+-        case MTK_QUALITY:
+-#endif
+             atFinalQuality = true;
+             break;
+         case MED_QUALITY:
+@@ -212,7 +197,6 @@ AudioResampler* AudioResampler::create(int bitDepth, int inChannelCount,
+ #endif
+         }
+     }
+-
+     pthread_mutex_unlock(&mutex);
+ 
+     AudioResampler* resampler;
+@@ -242,11 +226,6 @@ AudioResampler* AudioResampler::create(int bitDepth, int inChannelCount,
+         resampler = new AudioResamplerQTI(bitDepth, inChannelCount, sampleRate);
+         break;
+ #endif
+-#ifdef MTK_HARDWARE
+-    case MTK_QUALITY:
+-        resampler = new AudioResamplerMtkWrapper(bitDepth, inChannelCount, (int32_t)sampleRate);
+-        break;
+-#endif
+     }
+ 
+     // initialize resampler
+diff --git a/services/audioflinger/AudioResampler.h b/services/audioflinger/AudioResampler.h
+index 74016c3..5af70fb 100644
+--- a/services/audioflinger/AudioResampler.h
++++ b/services/audioflinger/AudioResampler.h
+@@ -44,9 +44,6 @@ public:
+ #ifdef QTI_RESAMPLER
+         QTI_QUALITY=5,
+ #endif
+-#ifdef MTK_HARDWARE
+-        MTK_QUALITY=5,
+-#endif
+     };
+ 
+     static AudioResampler* create(int bitDepth, int inChannelCount,
+diff --git a/services/audioflinger/Threads.cpp b/services/audioflinger/Threads.cpp
+index ae46e5d..f93bd1d 100644
+--- a/services/audioflinger/Threads.cpp
++++ b/services/audioflinger/Threads.cpp
+@@ -87,10 +87,6 @@
+ #include "postpro_patch.h"
+ #endif
+ 
+-#ifdef MTK_HARDWARE
+-#include "audioresampler/AudioResamplerMtkWrapper.h"
+-#endif
+-
+ // ----------------------------------------------------------------------------
+ 
+ // Note: the following macro is used for extremely verbose logging message.  In
+@@ -4948,13 +4944,8 @@ bool AudioFlinger::RecordThread::threadLoop()
+                                     upmix_to_stereo_i16_from_mono_i16((int16_t *)dst,
+                                             (int16_t *)src, framesIn);
+                                 } else {
+-#if MTK_HARDWARE
+-                                    MTK_downmix_to_mono_i16_from_stereo_i16((int16_t *)dst,
+-                                            (int16_t *)src, framesIn);
+-#else
+                                     downmix_to_mono_i16_from_stereo_i16((int16_t *)dst,
+                                             (int16_t *)src, framesIn);
+-#endif
+                                 }
+                             }
+                         }
+@@ -5037,13 +5028,8 @@ bool AudioFlinger::RecordThread::threadLoop()
+                         ditherAndClamp(mRsmpOutBuffer, mRsmpOutBuffer, framesOut);
+                         // the resampler always outputs stereo samples:
+                         // do post stereo to mono conversion
+-#ifdef MTK_HARDWARE
+-                        MTK_downmix_to_mono_i16_from_stereo_i16(buffer.i16, (int16_t *)mRsmpOutBuffer,
+-                                framesOut);
+-#else
+                         downmix_to_mono_i16_from_stereo_i16(buffer.i16, (int16_t *)mRsmpOutBuffer,
+                                 framesOut);
+-#endif
+                     } else {
+                         ditherAndClamp((int32_t *)buffer.raw, mRsmpOutBuffer, framesOut);
+                     }
+@@ -5722,11 +5708,7 @@ void AudioFlinger::RecordThread::readInputParameters()
+         } else {
+             channelCount = 2;
+         }
+-#ifdef MTK_HARDWARE
+-        mResampler = AudioResampler::create(16, channelCount, mReqSampleRate, AudioResampler::MTK_QUALITY);
+-#else
+         mResampler = AudioResampler::create(16, channelCount, mReqSampleRate);
+-#endif
+         mResampler->setSampleRate(mSampleRate);
+         mResampler->setVolume(AudioMixer::UNITY_GAIN, AudioMixer::UNITY_GAIN);
+         mRsmpOutBuffer = new int32_t[mFrameCount * FCC_2];
+diff --git a/services/camera/libcameraservice/api1/CameraClient.cpp b/services/camera/libcameraservice/api1/CameraClient.cpp
+index 4b37e89..1629e05 100644
+--- a/services/camera/libcameraservice/api1/CameraClient.cpp
++++ b/services/camera/libcameraservice/api1/CameraClient.cpp
+@@ -734,9 +734,6 @@ void CameraClient::disableMsgType(int32_t msgType) {
+ 
+ #define CHECK_MESSAGE_INTERVAL 10 // 10ms
+ bool CameraClient::lockIfMessageWanted(int32_t msgType) {
+-#ifdef MTK_HARDWARE
+-    return true;
+-#endif
+     int sleepCount = 0;
+     while (mMsgEnabled & msgType) {
+ #ifdef CAMERA_MSG_MGMT
+@@ -796,18 +793,6 @@ void CameraClient::notifyCallback(int32_t msgType, int32_t ext1,
+         return;
+     }
+ 
+-#ifdef MTK_HARDWARE
+-    if (msgType == 0x40000000) { //MTK_CAMERA_MSG_EXT_NOTIFY
+-        if (ext1 == 0x11) { //MTK_CAMERA_MSG_EXT_NOTIFY_SHUTTER
+-            msgType = CAMERA_MSG_SHUTTER;
+-        }
+-        if (ext1 == 0x10) { //MTK_CAMERA_MSG_EXT_CAPTURE_DONE
+-            return;
+-        }
+-        LOG2("MtknotifyCallback(0x%x, 0x%x)", ext1, ext2);
+-    }
+-#endif
+-
+     Mutex* lock = getClientLockFromCookie(user);
+     if (lock == NULL) return;
+     Mutex::Autolock alock(*lock);
+@@ -848,34 +833,6 @@ void CameraClient::dataCallback(int32_t msgType,
+         return;
+     }
+ 
+-#ifdef MTK_HARDWARE
+-    if (msgType == 0x80000000) { //MTK_CAMERA_MSG_EXT_DATA
+-        struct DataHeader {
+-            uint32_t        extMsgType;
+-        } dataHeader;
+-        sp<IMemoryHeap> heap = 0;
+-        ssize_t         offset = 0;
+-        size_t          size = 0;
+-
+-        if (dataPtr.get()) {
+-
+-            heap = dataPtr->getMemory(&offset, &size);
+-            if  ( NULL != heap.get() && NULL != heap->base() )
+-                ::memcpy(&dataHeader, ((uint8_t*)heap->base()) + offset, sizeof(DataHeader));
+-
+-            if (dataHeader.extMsgType == 0x10) { //MTK_CAMERA_MSG_EXT_DATA_COMPRESSED_IMAGE
+-                msgType = CAMERA_MSG_COMPRESSED_IMAGE;
+-                sp<MemoryBase> image = new MemoryBase(heap,
+-                        (offset + sizeof(DataHeader) + sizeof(uint_t) * 1),
+-                        (size - sizeof(DataHeader) - sizeof(uint_t) * 1));
+-                client->handleCompressedPicture(image);
+-                return;
+-            }
+-        }
+-        LOG2("MtkDataCallback(0x%x)", dataHeader.extMsgType);
+-    }
+-#endif
+-
+     switch (msgType & ~CAMERA_MSG_PREVIEW_METADATA) {
+         case CAMERA_MSG_PREVIEW_FRAME:
+             client->handlePreviewData(msgType, dataPtr, metadata);
+-- 
+2.1.4
+
