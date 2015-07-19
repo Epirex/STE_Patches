@@ -1,17 +1,5 @@
 #!/bin/bash
 
-rm -rf art
-rm -rf build
-rm -rf external/chromium_org
-rm -rf frameworks/av
-rm -rf frameworks/base
-rm -rf frameworks/native
-rm -rf packages/services/Telephony
-rm -rf system/core
-rm -rf system/vold
-
-repo sync
-
 echo "Applying art patches"
 cp patches/art-fix.patch art/
 cd art
