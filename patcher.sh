@@ -1,50 +1,109 @@
 #!/bin/bash
-echo -e "\e[0;32mPatcher for CyanogenMod 11\nStarting..."
 
-PATCHERDIR=$(dirname $(readlink -f "$0"))
-cd $PATCHERDIR
-cd ../../../..
-BASEDIR=$(pwd)
+rm -rf art
+rm -rf build
+rm -rf external/chromium_org
+rm -rf frameworks/av
+rm -rf frameworks/base
+rm -rf frameworks/native
+rm -rf packages/services/Telephony
+rm -rf system/core
+rm -rf system/vold
 
-echo -e "\n\e[0;31mPatching AV:\e[0;34m"
-cd $BASEDIR/frameworks/av
-patch -p1 -N -i$PATCHERDIR/frameworks_av-Remove-Mediatek-changes.patch
-patch -p1 -N -i$PATCHERDIR/frameworks_av-STE-Multimedia-Fix-1-4.patch
-patch -p1 -N -i$PATCHERDIR/frameworks_av-STE-OMX-fix-getSupportedProfileLevel.patch
-patch -p1 -N -i$PATCHERDIR/frameworks_av-video-streaming-fix.patch
+repo sync
 
-echo -e "\n\e[0;31mPatching BASE:\e[0;34m"
-cd $BASEDIR/frameworks/base
-patch -p1 -N -i$PATCHERDIR/frameworks_base-STE-Multimedia-Fix-4-4.patch
+echo "Applying art patches"
+cp patches/art-fix.patch art/
+cd art
+git apply art-fix.patch
+rm art-fix.patch
+cd ..
 
-echo -e "\n\e[0;31mPatching NATIVE:\e[0;34m"
-cd $BASEDIR/frameworks/native
-patch -p1 -N -i$PATCHERDIR/frameworks_native-STE-Multimedia-Fix-2-4.patch
-patch -p1 -N -i$PATCHERDIR/frameworks_native-Add-legacy-sensors-fusion.patch
+echo ""
 
-echo -e "\n\e[0;31mPatching CORE:\e[0;34m"
-cd $BASEDIR/system/core
-patch -p1 -N -i$PATCHERDIR/system_core-STE-Multimedia-Fix-3-4.patch
-patch -p1 -N -i$PATCHERDIR/system_core-Fix-shutdown-reboot-bug.patch
+echo "Applying build patches"
+cp patches/build-Use-GCC-4.8.patch build/
+cd build/
+git apply build-Use-GCC-4.8.patch
+rm build-Use-GCC-4.8.patch
+cd ..
 
-echo -e "\n\e[0;31mPatching VOLD:\e[0;34m"
-cd $BASEDIR/system/vold
-patch -p1 -N -i$PATCHERDIR/system_vold-Allow-swapped-storage-paths-at-vold-init.patch
+echo ""
 
-echo -e "\n\e[0;31mPatching TELEPHONY:\e[0;34m"
-cd $BASEDIR/packages/services/Telephony
-patch -p1 -N -i$PATCHERDIR/packages_Telephony-low-incall-volume-fix.patch
+echo "Applying chromium patches"
+cp patches/external_chromium_org-Fix-video-playback-in-streaming.patch external/chromium_org
+cd external/chromium_org
+git apply external_chromium_org-Fix-video-playback-in-streaming.patch
+rm external_chromium_org-Fix-video-playback-in-streaming.patch
+cd ../..
 
-echo -e "\n\e[0;31mPatching BUILD:\e[0;34m"
-cd $BASEDIR/build
-patch -p1 -N -i$PATCHERDIR/build-use_GCC_4.8.patch
+echo ""
 
-echo -e "\n\e[0;31mPatching ART:\e[0;34m"
-cd $BASEDIR/art
-patch -p1 -N -i$PATCHERDIR/art-fix.patch
+echo "Applying av patches"
+cp patches/frameworks_av-Remove-Mediatek-changes.patch frameworks/av
+cp patches/frameworks_av-STE-Multimedia-Fix-1-4.patch frameworks/av
+cp patches/frameworks_av-STE-OMX-fix-getSupportedProfileLevel.patch frameworks/av
+cp patches/frameworks_av-Video-streaming-fix.patch frameworks/av
+cd frameworks/av
+git apply frameworks_av-Remove-Mediatek-changes.patch
+git apply frameworks_av-STE-Multimedia-Fix-1-4.patch
+git apply frameworks_av-STE-OMX-fix-getSupportedProfileLevel.patch
+git apply frameworks_av-Video-streaming-fix.patch
+rm frameworks_av-Remove-Mediatek-changes.patch
+rm frameworks_av-STE-Multimedia-Fix-1-4.patch
+rm frameworks_av-STE-OMX-fix-getSupportedProfileLevel.patch
+rm frameworks_av-Video-streaming-fix.patch
+cd ../..
 
-echo -e "\n\e[0;31mPatching CHROMIUM:\e[0;34m"
-cd $BASEDIR/external/chromium_org
-patch -p1 -N -i$PATCHERDIR/chromium_org-Fix-video-playback-in-streaming.patch
+echo ""
 
-echo -e "\n\e[0;32mEverything (probably) patched, have a nice day!\e[0m"
+echo "Applying native patches"
+cp patches/frameworks_native-STE-Multimedia-Fix-2-4.patch frameworks/native
+cp patches/frameworks_native-Add-legacy-sensors-fusion.patch frameworks/native
+cd frameworks/native
+git apply frameworks_native-STE-Multimedia-Fix-2-4.patch
+git apply frameworks_native-Add-legacy-sensors-fusion.patch
+rm frameworks_native-STE-Multimedia-Fix-2-4.patch
+rm frameworks_native-Add-legacy-sensors-fusion.patch
+cd ../..
+
+echo ""
+
+echo "Applying core patches"
+cp patches/system_core-STE-Multimedia-Fix-3-4.patch system/core
+cp patches/system_core-Fix-shutdown-reboot-bug.patch system/core
+cd system/core
+git apply system_core-STE-Multimedia-Fix-3-4.patch
+git apply system_core-Fix-shutdown-reboot-bug.patch
+rm system_core-STE-Multimedia-Fix-3-4.patch
+rm system_core-Fix-shutdown-reboot-bug.patch
+cd ../..
+
+echo ""
+
+echo "Applying base patches"
+cp patches/frameworks_base-STE-Multimedia-Fix-4-4.patch frameworks/base
+cd frameworks/base
+git apply frameworks_base-STE-Multimedia-Fix-4-4.patch
+rm frameworks_base-STE-Multimedia-Fix-4-4.patch
+cd ../..
+
+echo ""
+
+echo "Applying Telephony patches"
+cp patches/packages_services_Telephony-Low-incall-volume-fix.patch packages/services/Telephony
+cd packages/services/Telephony
+git apply packages_services_Telephony-Low-incall-volume-fix.patch
+rm packages_services_Telephony-Low-incall-volume-fix.patch
+cd ../../..
+
+echo ""
+
+echo "Applying vold patches"
+cp patches/system_vold-Allow-swapped-storage-paths-at-vold-init.patch system/vold
+cd system/vold
+git apply system_vold-Allow-swapped-storage-paths-at-vold-init.patch
+rm system_vold-Allow-swapped-storage-paths-at-vold-init.patch
+cd ../..
+
+echo ""
