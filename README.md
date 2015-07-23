@@ -12,7 +12,7 @@ How to add these patches in my repo? you need add this in local_manifest.xml
 
 To apply patches:
 
-      REPO_BRANCH="cm-11.0" DEVICE="janice" patches/cherry-pick.sh
+      patches/cyanogenmod.sh
       
 --------------------------------------------------------------
 
