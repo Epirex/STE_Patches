@@ -71,6 +71,12 @@ git fetch https://github.com/EpirexDevProjects/android_build cm-11.0
 git cherry-pick 32b52016895e36944950e33e9d48b0d814c0296b
 cd ..
 echo "==============================================="
+echo "Add MaxiCM version"
+cd packages/apps/Settings
+git fetch https://github.com/MaxiCM/android_packages_apps_Settings cm-11.0
+git cherry-pick ff6896f882ca4741a4317a659c3b0d543ccde595
+cd ..
+echo "==============================================="
 echo ""
 echo "Finished, everything (probably) patched, have a nice day!"
 echo ""
