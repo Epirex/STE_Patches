@@ -75,7 +75,7 @@ echo "Add MaxiCM version"
 cd packages/apps/Settings
 git fetch https://github.com/MaxiCM/android_packages_apps_Settings cm-11.0
 git cherry-pick ff6896f882ca4741a4317a659c3b0d543ccde595
-cd ..
+cd ../../..
 echo "==============================================="
 echo ""
 echo "Finished, everything (probably) patched, have a nice day!"
