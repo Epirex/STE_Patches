@@ -2,6 +2,17 @@
 
 if [ "$REPO_BRANCH" = "cm-12.1" ] || [ "$DEVICE" = "janice" ]
 then
+  echo -e $CL_BLU"Cherrypicking android_build"$CL_RST
+  cd build
+  git fetch https://github.com/EpirexDevProjects/android_build cm-12.1
+  git cherry-pick a22f17677852770220ef9fc74d0fb148a5beaf92
+  git cherry-pick 53037e3b014ac4e2638cd76c47d061e9d622cfaa
+  git cherry-pick 31ac93f631a6f861991ded8266921102d7d54c0e
+  cd ..
+fi
+
+if [ "$REPO_BRANCH" = "cm-12.1" ] || [ "$DEVICE" = "janice" ]
+then
   echo -e $CL_BLU"Cherrypicking android_frameworks_av"$CL_RST
   cd frameworks/av
   git fetch https://github.com/EpirexDevProjects/android_frameworks_av patch-1
