@@ -6,7 +6,6 @@ echo ""
 echo "[1/4] Fix STE OMX: frameworks/av"
 cd frameworks/av
 git fetch https://github.com/EpirexDevProjects/android_frameworks_av cm-11.0
-git cherry-pick 19dc4b91c8baee1731ef5ddd0507e47702eacfd4
 git cherry-pick 64a82588b4e7efc171ff21d116903aebb7bc62a2
 git cherry-pick bdb3f5e4b8db5af839742a83631b40319b7ebf81
 git cherry-pick 16fe27e1a983033790125f6983b20b90ed4a622d
@@ -56,13 +55,6 @@ cd external/chromium_org
 git fetch https://github.com/Epirex/android_external_chromium_org cm-11.0
 git cherry-pick d50a349b18426be06608191ad3ab9b9d17e2c0a5
 cd ../..
-echo "==============================================="
-echo ""
-echo "Fix ART"
-cd art
-git fetch https://github.com/cernekee/android_art monitor-stack-v1
-git cherry-pick fc2ac71d0d9e147c607bff9371fe2ef25d8470af
-cd ..
 echo "==============================================="
 echo ""
 echo "Use GCC 4.8"
