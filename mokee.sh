@@ -1,6 +1,6 @@
 echo ""
 echo "This document will cherry pick different fixes"
-echo "    Cherry-picks patches for CyanogenMod 11"
+echo "    Cherry-picks patches for MoKee OS 4.4"
 echo "==============================================="
 echo ""
 echo "[1/4] Fix STE OMX: frameworks/av"
