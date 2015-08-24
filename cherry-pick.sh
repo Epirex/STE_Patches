@@ -48,6 +48,15 @@ fi
 
 if [ "$REPO_BRANCH" = "cm-12.1" ] || [ "$DEVICE" = "janice" ]
 then
+  echo -e $CL_BLU"Cherrypicking android_hardware_libhardware_legacy"$CL_RST
+  cd hardware/libhardware_legacy
+  git fetch https://github.com/EpirexDevProjects/android_hardware_libhardware_legacy cm-12.1
+  git cherry-pick 1ce796d1057cbc4f2f5ef9b5287c70bbbe21c379
+  cd ../..
+fi
+
+if [ "$REPO_BRANCH" = "cm-12.1" ] || [ "$DEVICE" = "janice" ]
+then
   echo -e $CL_BLU"Cherrypicking android_bionic"$CL_RST
   cd bionic
   git fetch https://github.com/EpirexDevProjects/android_bionic cm-12.1
