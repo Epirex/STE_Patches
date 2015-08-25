@@ -96,9 +96,9 @@ fi
 
 if [ "$REPO_BRANCH" = "cm-12.1" ] || [ "$DEVICE" = "janice" ]
 then
-  echo -e $CL_BLU"Cherrypicking android_packages_apps_Settings"$CL_RST
-  cd packages/apps/Settings
-  git fetch https://github.com/EpirexDevProjects/android_packages_apps_Settings cm-12.1
-  git cherry-pick f89d17f8e538560540380c0bdeff5f98489dd6d0
-  cd ../../..
+  echo -e $CL_BLU"Cherrypicking android_frameworks_opt_net_wifi"$CL_RST
+  cd frameworks/opt/net/wifi
+  git fetch https://github.com/hastalafiesta/android_frameworks_opt_net_wifi cm-12.1
+  git cherry-pick f2864d968922e082328153f8051d94836e87b6d9
+  cd ../../../..
 fi
