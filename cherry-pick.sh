@@ -81,7 +81,7 @@ then
   echo -e $CL_BLU"Cherrypicking android_packages_services_Telecomm"$CL_RST
   cd packages/services/Telecomm
   git fetch https://github.com/EpirexDevProjects/android_packages_services_Telecomm cm-12.1
-  git cherry-pick c398004508b9e40897b2f8af9c1775edefa399d0
+  git cherry-pick af76118d70d66eea2349980124d797d9272d4f3b
   cd ../../..
 fi
 
