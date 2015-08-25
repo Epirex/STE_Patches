@@ -94,3 +94,11 @@ then
   cd ../../..
 fi
 
+if [ "$REPO_BRANCH" = "cm-12.1" ] || [ "$DEVICE" = "janice" ]
+then
+  echo -e $CL_BLU"Cherrypicking android_packages_apps_Settings"$CL_RST
+  cd packages/apps/Settings
+  git fetch https://github.com/EpirexDevProjects/android_packages_apps_Settings cm-12.1
+  git cherry-pick f89d17f8e538560540380c0bdeff5f98489dd6d0
+  cd ../../..
+fi
