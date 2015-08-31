@@ -34,9 +34,7 @@ then
   echo -e $CL_BLU"Cherrypicking android_system_core"$CL_RST
   cd system/core
   git fetch https://github.com/EpirexDevProjects/android_system_core cm-12.1
-  git cherry-pick 1764365eae1e3efe7b460d3937e4b0f1a71a19ec
-  git cherry-pick d959c5236c4f7e83927becc71026347f05d3ba29
-  git cherry-pick beff5ea695c9913efb83bfed1049a5a34489010d
+  git cherry-pick 7205e97e2759742fc8ceacfeaffb5199f08a0289
   cd ../..
 fi
 
