@@ -14,8 +14,8 @@ if [ "$REPO_BRANCH" = "cm-12.1" ] || [ "$DEVICE" = "janice" ]
 then
   echo -e $CL_BLU"Cherrypicking android_frameworks_av"$CL_RST
   cd frameworks/av
-  git fetch https://github.com/EpirexDevProjects/android_frameworks_av patch-1
-  git cherry-pick 1117a2993141a5b089e138213396ecc0d7e76f76
+  git fetch https://github.com/EpirexDevProjects/pa_android_frameworks_av lollipop-mr1
+  git cherry-pick efcad706532ef1052fcc46b19908664477947bc2
   cd ../..
 fi
 
@@ -23,10 +23,8 @@ if [ "$REPO_BRANCH" = "cm-12.1" ] || [ "$DEVICE" = "janice" ]
 then
   echo -e $CL_BLU"Cherrypicking android_frameworks_native"$CL_RST
   cd frameworks/native
-  git fetch https://github.com/EpirexDevProjects/android_frameworks_native cm-12.1
-  git cherry-pick ce62b9754d5fdcf0fd0587aade5eae1d2b5d32a7
-  git fetch http://review.cyanogenmod.org/CyanogenMod/android_frameworks_native refs/changes/05/85405/2
-  git cherry-pick FETCH_HEAD
+  git fetch https://github.com/EpirexDevProjects/pa_android_frameworks_native lollipop-mr1
+  git cherry-pick 9a363c668c143e0dd4f518172743b30ae7ad4555
   cd ../..
 fi
 
@@ -34,27 +32,8 @@ if [ "$REPO_BRANCH" = "cm-12.1" ] || [ "$DEVICE" = "janice" ]
 then
   echo -e $CL_BLU"Cherrypicking android_system_core"$CL_RST
   cd system/core
-  git fetch https://github.com/EpirexDevProjects/android_system_core cm-12.1
-  git cherry-pick 7205e97e2759742fc8ceacfeaffb5199f08a0289
-  cd ../..
-fi
-
-if [ "$REPO_BRANCH" = "cm-12.1" ] || [ "$DEVICE" = "janice" ]
-then
-  echo -e $CL_BLU"Cherrypicking android_frameworks_base"$CL_RST
-  cd frameworks/base
-  git fetch https://github.com/EpirexDevProjects/android_frameworks_base cm-12.1
-  git cherry-pick 83385561d5d5c031a26bfa263606264b1262a4b2
-  git cherry-pick 1a644e14da7b41ea9f9d0314ee3156d3d8fa2ad5
-  cd ../..
-fi
-
-if [ "$REPO_BRANCH" = "cm-12.1" ] || [ "$DEVICE" = "janice" ]
-then
-  echo -e $CL_BLU"Cherrypicking android_hardware_libhardware"$CL_RST
-  cd hardware/libhardware
-  git fetch http://review.cyanogenmod.org/CyanogenMod/android_hardware_libhardware refs/changes/06/85406/2
-  git cherry-pick FETCH_HEAD
+  git fetch https://github.com/EpirexDevProjects/pa_android_system_core lollipop-mr1
+  git cherry-pick 8b198b5bec318e5fb6556ef9a1b9d4750880421c
   cd ../..
 fi
 
