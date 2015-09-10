@@ -14,8 +14,8 @@ if [ "$REPO_BRANCH" = "cm-12.1" ] || [ "$DEVICE" = "janice" ]
 then
   echo -e $CL_BLU"Cherrypicking android_frameworks_av"$CL_RST
   cd frameworks/av
-  git fetch https://github.com/EpirexDevProjects/pa_android_frameworks_av lollipop-mr1
-  git cherry-pick efcad706532ef1052fcc46b19908664477947bc2
+  git fetch https://github.com/EpirexDevProjects/android_frameworks_av patch-1
+  git cherry-pick 1117a2993141a5b089e138213396ecc0d7e76f76
   cd ../..
 fi
 
@@ -23,8 +23,10 @@ if [ "$REPO_BRANCH" = "cm-12.1" ] || [ "$DEVICE" = "janice" ]
 then
   echo -e $CL_BLU"Cherrypicking android_frameworks_native"$CL_RST
   cd frameworks/native
-  git fetch https://github.com/EpirexDevProjects/pa_android_frameworks_native lollipop-mr1
-  git cherry-pick 9a363c668c143e0dd4f518172743b30ae7ad4555
+  git fetch https://github.com/EpirexDevProjects/android_frameworks_native cm-12.1
+  git cherry-pick ce62b9754d5fdcf0fd0587aade5eae1d2b5d32a7
+  git fetch http://review.cyanogenmod.org/CyanogenMod/android_frameworks_native refs/changes/05/85405/2
+  git cherry-pick FETCH_HEAD
   cd ../..
 fi
 
@@ -44,15 +46,6 @@ then
   git fetch https://github.com/EpirexDevProjects/android_hardware_libhardware_legacy cm-12.1
   git cherry-pick 1ce796d1057cbc4f2f5ef9b5287c70bbbe21c379
   cd ../..
-fi
-
-if [ "$REPO_BRANCH" = "cm-12.1" ] || [ "$DEVICE" = "janice" ]
-then
-  echo -e $CL_BLU"Cherrypicking android_bionic"$CL_RST
-  cd bionic
-  git fetch https://github.com/EpirexDevProjects/android_bionic cm-12.1
-  git cherry-pick d1eb51d246db5fc086c218cdacf6f7cdd1cc38c7
-  cd ..
 fi
 
 if [ "$REPO_BRANCH" = "cm-12.1" ] || [ "$DEVICE" = "janice" ]
