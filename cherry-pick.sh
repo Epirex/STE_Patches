@@ -25,8 +25,6 @@ then
   cd frameworks/native
   git fetch https://github.com/EpirexDevProjects/android_frameworks_native cm-12.1
   git cherry-pick ce62b9754d5fdcf0fd0587aade5eae1d2b5d32a7
-  git fetch http://review.cyanogenmod.org/CyanogenMod/android_frameworks_native refs/changes/05/85405/2
-  git cherry-pick FETCH_HEAD
   cd ../..
 fi
 
