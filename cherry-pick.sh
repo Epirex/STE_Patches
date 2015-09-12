@@ -25,6 +25,8 @@ then
   cd frameworks/native
   git fetch https://github.com/EpirexDevProjects/android_frameworks_native cm-12.1
   git cherry-pick ce62b9754d5fdcf0fd0587aade5eae1d2b5d32a7
+  git fetch http://review.cyanogenmod.org/CyanogenMod/android_frameworks_native refs/changes/05/85405/2
+  git cherry-pick FETCH_HEAD
   cd ../..
 fi
 
@@ -34,6 +36,15 @@ then
   cd system/core
   git fetch https://github.com/EpirexDevProjects/pa_android_system_core lollipop-mr1
   git cherry-pick 8b198b5bec318e5fb6556ef9a1b9d4750880421c
+  cd ../..
+fi
+
+if [ "$REPO_BRANCH" = "cm-12.1" ] || [ "$DEVICE" = "janice" ]
+then
+  echo -e $CL_BLU"Cherrypicking android_hardware_libhardware"$CL_RST
+  cd hardware/libhardware
+  git fetch http://review.cyanogenmod.org/CyanogenMod/android_hardware_libhardware refs/changes/06/85406/2
+  git cherry-pick FETCH_HEAD
   cd ../..
 fi
 
